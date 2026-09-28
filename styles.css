@@ -34,7 +34,7 @@ h1 { margin-bottom: 1.3rem; font-size: clamp(4.5rem, 11vw, 9.5rem); line-height:
 .sponsors { margin-top: 6rem; font-family: "Poppins", ui-sans-serif, system-ui, sans-serif; }
 .sponsors-heading { margin-bottom: 1.5rem; }
 .sponsors-heading .kicker { margin-bottom: .45rem; }
-.sponsor-wall { position: relative; padding: clamp(1.25rem, 4vw, 2.75rem); border: 1px solid rgba(206, 230, 244, .2); border-radius: 3px; background: #fff; box-shadow: 0 18px 42px rgba(0,0,0,.12); }
+.sponsor-wall { position: relative; }
 .sponsor-wall-inner { position: relative; }
 .sponsor-wall img { display: block; width: 100%; height: auto; }
 .sponsor-link { position: absolute; z-index: 1; top: var(--top); left: var(--left); width: var(--width); height: var(--height); border-radius: 4px; cursor: pointer; }
