@@ -4,10 +4,10 @@ The public GitHub Pages calendar uses [Cloudflare Workers and D1](../cloudflare/
 This Python service provides the local preview with a separate SQLite database.
 
 The calendar markup is in the main `index.html`, with its scripts, styles, and configuration in `side-events/`.
-The small Python WSGI service stores events in SQLite.
 No application accounts, cookies, analytics, or application visitor logs are used.
 Event fields, a private contact email, revision metadata, and private before/after history are stored in SQLite.
-Contact addresses are never returned by the public API. Editing and deleting require the event's original contact email; public edits cannot replace it.
+Contact addresses are never returned by the public API. Participants must enter the event's original contact email to edit or delete it;
+organizers can use the private sign-in described below. Neither editing method replaces the saved address.
 The preview uses the same history migration as Cloudflare, but sends no Discord notifications. Use fictitious addresses for local tests.
 Hosting providers and reverse proxies may keep their own access logs; configure those separately.
 

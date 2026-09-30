@@ -64,14 +64,13 @@ npx wrangler d1 export DB --remote --config cloudflare/wrangler.jsonc --output .
 
 Keep exports outside Git. Cloudflare also provides D1 Time Travel recovery.
 
-
 ## Private contacts and Discord notifications
 
 New events require a contact email. Updates and deletions require entering the same address, including through the legacy `/api/events` route.
 The API checks the email and revision in the database mutation itself. It trims surrounding spaces and ignores ASCII letter case; public edits cannot replace the address.
 The address stays hidden in public responses, forms, and error messages. This checks knowledge of the address, not ownership of the mailbox.
 Legacy or example events without a saved address cannot be edited or deleted with email verification; signed-in organizers can manage them.
-The form explains the purpose and offers direct contact via robert@mq.sc as an alternative.
+The form explains the purpose; the community-area introduction offers direct contact via robert@mq.sc as an alternative.
 
 1. Create a private **text channel on a Discord server** accessible only to Simon, Robert, and trusted server administrators.
    Group DMs do not support incoming webhooks. Set the channel's notification preference to **All Messages** for both organizers.
@@ -95,7 +94,7 @@ If delivery repeatedly fails, check channel/webhook permissions and the `notify_
 
 ## Review and recover changes
 
-Run these from the repository root using an authorized Wrangler login. No admin secret or history is exposed on the website.
+Run these from the repository root using an authorized Wrangler login. Private history is only accessible through authorized database tools.
 The change ID is included in every Discord notification.
 
 ```sh
@@ -141,7 +140,7 @@ node cloudflare/moderate.mjs assign-table EVENT_ID 1 CURRENT_VERSION --apply
 ```
 
 Use `none` instead of a number to clear an assignment. Get the event ID and current version from `tables`.
-Assignments appear in event details and Discord notifications. Only organizers with database access can change them;
+Assignments appear in event details and Discord notifications. Change them through organizer sign-in or with authorized database access;
 public event edits preserve the saved table. The database rejects overlapping sessions at the same table, including
 time changes and restored events. Back-to-back sessions and sessions on different days can reuse a table.
 Assignments increment the event revision and are included in the private change history, so they can be undone with `restore`.

@@ -56,11 +56,16 @@
 .side-events-ui .day-column { --event-space: 100%; border-left: 1px solid var(--line); background-image: linear-gradient(to bottom, #dce4ee 1px, transparent 1px), linear-gradient(to bottom, #eef2f6 1px, transparent 1px); background-size: 100% 78px, 100% 39px; }
 .side-events-ui .time-selection { position: absolute; left: 4px; right: 4px; z-index: 2; pointer-events: none; border: 2px solid var(--blue); border-radius: 6px; background: #dcefffdd; color: #004b7c; padding-inline: 8px; font-size: .8125rem; font-weight: 400; line-height: 1.2; font-variant-numeric: tabular-nums; }
 .selecting-time, .selecting-time * { cursor: crosshair !important; user-select: none; -webkit-user-select: none; }
-@media (hover: hover) and (pointer: fine) {
-  /* Keep a continuous empty strip for dragging, even beside overlapping events. */
-  .side-events-ui .day-column { --event-space: calc(100% - clamp(48px, 18%, 80px)); cursor: crosshair; }
+.side-events-ui .event {
+  --event-gap: 5px;
+  position: absolute; top: var(--top); height: var(--height);
+  left: calc(var(--column) * var(--event-space) / var(--columns) + var(--event-gap));
+  width: calc(var(--event-space) / var(--columns) - 2 * var(--event-gap));
+  text-align: left; display: flex; flex-direction: column; container-type: size;
+  padding: 8px 10px; overflow: hidden;
+  border: 1px solid var(--event-border); border-left: 3px solid var(--event-accent); border-radius: 6px;
+  color: var(--event-ink); background: var(--event-bg); box-shadow: 0 2px 3px #10204005;
 }
-.side-events-ui .event { position: absolute; top: var(--top); height: var(--height); left: calc(var(--column) * var(--event-space) / var(--columns) + 5px); width: calc(var(--event-space) / var(--columns) - 10px); text-align: left; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; container-type: size; padding: 8px 10px; overflow: hidden; border: 1px solid var(--event-border); border-left: 3px solid var(--event-accent); border-radius: 6px; color: var(--event-ink); background: var(--event-bg); box-shadow: 0 2px 3px #10204005; }
 .side-events-ui .event:hover, .side-events-ui .event:focus-visible { filter: brightness(.97); box-shadow: 0 3px 12px #1020401a; z-index: 2; }
 .side-events-ui .event-time { display: block; flex-shrink: 0; font-size: .75rem; line-height: 16px; margin-bottom: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .side-events-ui .event-title { display: -webkit-box; flex-shrink: 0; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .9375rem; line-height: 1.35; font-weight: 400; overflow-wrap: anywhere; }
@@ -83,7 +88,11 @@
 .side-events-ui .page-note { color: #b4c6db; text-align: center; margin: 20px 0 0; font-size: .875rem; }
 .side-events-ui .organizer-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; padding: 12px 16px; border: 1px solid #c9d3e0; border-radius: 10px; background: #eef5ff; color: var(--ink); font-size: .875rem; }
 .side-events-ui .drag-hint { display: none; }
-@media (hover: hover) and (pointer: fine) { .side-events-ui .drag-hint { display: inline; } }
+@media (hover: hover) and (pointer: fine) {
+  /* Keep a continuous empty strip for dragging, even beside overlapping events. */
+  .side-events-ui .day-column { --event-space: calc(100% - clamp(48px, 18%, 80px)); cursor: crosshair; }
+  .side-events-ui .drag-hint { display: inline; }
+}
 .side-events-ui .mobile-days { display: none; }
 .side-events-ui dialog { width: min(600px, calc(100% - 32px)); max-height: calc(100dvh - 40px); margin: auto; border: 1px solid #e0e6ee; border-radius: 16px; box-shadow: 0 25px 100px #071c4266; padding: 24px; color: var(--ink); background: #fff; overscroll-behavior: contain; }
 .side-events-ui dialog::backdrop { background: #081a36a8; backdrop-filter: blur(3px); }
@@ -92,7 +101,7 @@
 .side-events-ui .icon-button { font-size: 1.65rem; font-weight: 300; width: 40px; height: 40px; display: grid; place-items: center; background: #f2f5f8; border: 0; color: var(--muted); line-height: 1; flex-shrink: 0; }
 .side-events-ui dialog h2 { font-size: 1.65rem; line-height: 1.25; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .side-events-ui .editor-intro { color: var(--muted); font-size: .9375rem; margin: 12px 0 24px; }
-.side-events-ui fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+.side-events-ui fieldset { margin: 16px 0 0; padding: 0; border: 0; min-width: 0; }
 .side-events-ui label { display: block; font-size: .875rem; font-weight: 400; margin: 16px 0 8px; }
 .side-events-ui input, .side-events-ui textarea, .side-events-ui select { width: 100%; min-width: 0; padding: 10px 11px; min-height: 46px; border: 1px solid #c9d3e0; background: #fff; color: var(--ink); font-size: 1rem; }
 .side-events-ui input, .side-events-ui select { height: 48px; }
@@ -138,13 +147,12 @@
   .side-events-ui .mobile-days button[aria-pressed="true"] { background: white; color: var(--blue); border-color: #d6e1ef; box-shadow: 0 2px 4px #10204008; }
   .side-events-ui .calendar-head, .side-events-ui .calendar-grid { grid-template-columns: 49px minmax(0, 1fr); }
   .side-events-ui .calendar-head .day-heading:not(.active-day), .side-events-ui .calendar-grid .day-column:not(.active-day) { display: none; }
-  .side-events-ui .day-heading { padding: 16px 12px; gap: 12px; }
+  .side-events-ui .day-heading { padding: 16px 12px; }
   .side-events-ui .date-number { width: 40px; height: 40px; font-size: 1.4rem; }
   .side-events-ui .day-count { font-size: .75rem; }
   .side-events-ui .time-label { right: 7px; }
-  .side-events-ui .event { padding: 7px; left: calc(var(--column) * var(--event-space) / var(--columns) + 3px); width: calc(var(--event-space) / var(--columns) - 6px); }
+  .side-events-ui .event { --event-gap: 3px; padding: 7px; }
   .side-events-ui .event-title { font-size: .875rem; -webkit-line-clamp: 2; }
-  .side-events-ui .event-time { font-size: .75rem; }
   .side-events-ui .event-audience { display: none; }
   @container (height < 56px) { .side-events-ui .event-title { -webkit-line-clamp: 1; } }
   .side-events-ui .calendar-bottom { display: block; padding: 16px; }
