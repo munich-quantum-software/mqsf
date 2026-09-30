@@ -31,7 +31,7 @@ with TemporaryDirectory() as directory:
     assert request(app)[1] == {"events": [], "demo": False}
     assert request(app, "POST", data=event, origin="https://unrelated.example")[0] == 403
     assert request(app, "POST", data=event, content_type="text/plain")[0] == 415
-    status, data, headers = request(app, "POST", data=event, origin="https://munich-quantum-software.github.io")
+    status, data, headers = request(app, "POST", data={**event, "contact_email": "  private@example.test  "}, origin="https://munich-quantum-software.github.io")
     assert status == 201 and headers["Access-Control-Allow-Origin"] == "https://munich-quantum-software.github.io"
     first = data["event"]
     assert first["title"] == event["title"] and first["version"] == 1
@@ -45,12 +45,23 @@ with TemporaryDirectory() as directory:
     assert request(app, "GET", "/mqsf/api/events")[1]["events"] == [first]
     assert request(app, "POST", "/mqsf/api/events", data={**event, "start": "10:30", "end": "11:30"})[0] == 201, "Overlaps are allowed"
     path = "/mqsf/api/meetups/" + first["id"]
+    for route in [path, legacy_path]:
+        for method in ["PUT", "DELETE"]:
+            for email in [None, "", 123, "invalid", "a@example.test\r\nBcc:x", "wrong@example.test", "x' OR 1=1 --@example.test"]:
+                denied = request(app, method, route, {**first, "contact_email": email})
+                assert denied[0] == (403 if email == "wrong@example.test" else 400)
+                assert event["contact_email"] not in json.dumps(denied[1]), "Errors must not reveal the saved email"
+            assert request(app, method, route, first)[0] == 400, "Missing email must be rejected"
+            assert request(app, method, route, {**first, "version": 999, "contact_email": "wrong@example.test"})[0] == 403
+    assert next(e for e in request(app)[1]["events"] if e["id"] == first["id"]) == first
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM event_changes WHERE event_id=?", (first["id"],)).fetchone()[0] == 1, "Denied writes create no history or notifications"
     with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(lambda title: request(app, "PUT", path, {**first, "title": title})[0], ["Editor one", "Editor two"]))
+        results = list(pool.map(lambda title: request(app, "PUT", path, {**first, "title": title, "contact_email": event["contact_email"]})[0], ["Editor one", "Editor two"]))
     assert sorted(results) == [200, 409], "Concurrent edits must not overwrite each other"
     latest = next(e for e in request(app)[1]["events"] if e["id"] == first["id"])
     assert latest["version"] == 2
-    assert request(app, "DELETE", legacy_path, {"version": 1})[0] == 409
+    assert request(app, "DELETE", legacy_path, {"version": 1, "contact_email": event["contact_email"]})[0] == 409
     for changes in [{"contact_email": ""}, {"contact_email": None}, {"contact_email": "invalid"}, {"contact_email": "a@example.test\nX"}, {"date": "2026-10-16"}, {"start": "11:00"}, {"end": "09:00"}, {"start": "24:00"},
                     {"title": " "}, {"title": "x" * 121}, {"description": None}, {"audience": 5},
                     {"organizers": " "}, {"organizers": "x" * 201}, {"start": "07:59"}]:
@@ -65,24 +76,24 @@ with TemporaryDirectory() as directory:
     except RequestError as error:
         assert error.status == 400
     assert request(app, "POST", data={**event, "start": "18:00", "end": "21:00"})[0] == 201, "Networking has no published cutoff"
-    status, data, _ = request(app, "PUT", legacy_path, {**latest, "organizers": "Taylor"})
+    status, data, _ = request(app, "PUT", legacy_path, {**latest, "organizers": "Taylor", "contact_email": "  PRIVATE@EXAMPLE.TEST  "})
     assert status == 200 and data["event"]["organizers"] == "Taylor"
     latest = data["event"]
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT contact_email FROM events WHERE id=?", (first["id"],)).fetchone()[0] == event["contact_email"]
-    status, data, _ = request(app, "PUT", path, {**latest, "contact_email": "new@example.test"})
+    status, data, _ = request(app, "PUT", path, {**latest, "title": "Updated with original contact", "contact_email": event["contact_email"]})
     assert status == 200 and "contact_email" not in data["event"]
     latest = data["event"]
-    assert request(app, "DELETE", path, {"version": latest["version"]})[0] == 200
+    assert request(app, "DELETE", legacy_path, {"version": latest["version"], "contact_email": "  PRIVATE@EXAMPLE.TEST  "})[0] == 200
     with sqlite3.connect(database) as connection:
         rows = connection.execute("SELECT action, before_json, after_json FROM event_changes WHERE event_id=? ORDER BY rowid", (first["id"],)).fetchall()
         assert [row[0] for row in rows] == ["created", "updated", "updated", "updated", "deleted"]
         assert json.loads(rows[-2][1])["contact_email"] == event["contact_email"]
-        assert json.loads(rows[-1][1])["contact_email"] == "new@example.test"
+        assert json.loads(rows[-1][1])["contact_email"] == event["contact_email"]
         assert rows[-1][2] is None
     assert "contact_email" not in json.dumps(request(app)[1])
     assert request(app, "GET", "/mqsf/api/history")[0] == 404
-    assert request(app, "PUT", path, latest)[0] == 404
+    assert request(app, "PUT", path, {**latest, "contact_email": event["contact_email"]})[0] == 404
     assert request(app, "GET", "/mqsf/../backend/server.py")[0] == 404
     assert request(app, "GET", "/mqsf/.data/events.sqlite3")[0] == 404
     assert request(app, "GET", "/mqsf")[0] == 308
@@ -108,6 +119,10 @@ with TemporaryDirectory() as directory:
     examples = request(seeded)[1]
     assert examples["demo"] is False and len(examples["events"]) == 5
     assert all(e["title"].endswith(" (example)") and e["organizers"] == "Example organizer" for e in examples["events"])
+    for method in ["PUT", "DELETE"]:
+        example = examples["events"][0]
+        assert request(seeded, method, "/api/meetups/" + example["id"], {**example, "contact_email": ""})[0] == 400
+        assert request(seeded, method, "/api/events/" + example["id"], {**example, "contact_email": event["contact_email"]})[0] == 403, "Events without an address cannot be claimed"
     assert request(create_app(seeded_db, seed_examples=True))[1] == examples, "Seeding must not duplicate or replace existing events"
     before = request(app)[1]
     assert request(create_app(database, seed_examples=True))[1] == before, "Seeding must leave an existing calendar untouched"
@@ -119,7 +134,7 @@ with TemporaryDirectory() as directory:
         results = list(pool.map(lambda _: request(capped, "POST", data=event), range(2)))
     assert sorted(r[0] for r in results) == [201, 422], "Only one concurrent save can take the last place"
     third = next(r[1]["event"] for r in results if r[0] == 201)
-    assert request(capped, "PUT", "/api/meetups/" + third["id"], {**third, "title": "Edited at capacity"})[0] == 200
+    assert request(capped, "PUT", "/api/meetups/" + third["id"], {**third, "title": "Edited at capacity", "contact_email": event["contact_email"]})[0] == 200
     before_rejected = request(capped)[1]
     assert request(capped, "POST", data={**event, "start": "09:00", "end": "12:00"})[0] == 422
     assert request(capped)[1] == before_rejected
@@ -134,7 +149,7 @@ with TemporaryDirectory() as directory:
     before_rejected = request(capped)[1]
     assert request(capped, "PUT", "/api/events/" + adjacent[0]["id"], {**event, "version": 1})[0] == 422
     assert request(capped)[1] == before_rejected, "Rejected edits preserve the original event"
-    assert request(capped, "DELETE", "/api/meetups/" + third["id"], {"version": 2})[0] == 200
+    assert request(capped, "DELETE", "/api/meetups/" + third["id"], {"version": 2, "contact_email": event["contact_email"]})[0] == 200
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(lambda e: request(capped, "PUT", "/api/meetups/" + e["id"], {**event, "version": 1})[0], adjacent))
     assert sorted(results) == [200, 422], "Concurrent edits cannot overbook the last place"
@@ -149,10 +164,10 @@ with TemporaryDirectory() as directory:
         connection.execute("UPDATE events SET table_number=1, version=version+1")
         row = connection.execute("SELECT after_json FROM event_changes WHERE event_id=? ORDER BY rowid DESC LIMIT 1", (a["id"],)).fetchone()
         assert json.loads(row[0])["table_number"] == 1
-    public_edit = request(tables, "PUT", "/api/meetups/" + a["id"], {**a, "version": 2, "table_number": 2})
+    public_edit = request(tables, "PUT", "/api/meetups/" + a["id"], {**a, "version": 2, "table_number": 2, "contact_email": event["contact_email"]})
     assert public_edit[0] == 200 and public_edit[1]["event"]["table_number"] == 1
     before_conflict = request(tables)[1]
-    conflict = request(tables, "PUT", "/api/meetups/" + b["id"], {**b, "version": 2, "start": "10:30"})
+    conflict = request(tables, "PUT", "/api/meetups/" + b["id"], {**b, "version": 2, "start": "10:30", "contact_email": event["contact_email"]})
     assert conflict[0] == 422 and "assigned table is already occupied" in conflict[1]["error"]
     assert request(tables)[1] == before_conflict
 print("Calendar API checks passed: persistence, organizers, migration, concurrent edits, deletion, hours, navigation, and path isolation.")

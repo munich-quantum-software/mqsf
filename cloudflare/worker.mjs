@@ -28,13 +28,12 @@ function validate(data) {
   return event;
 }
 
-function contactEmail(data, required) {
+function contactEmail(data) {
   const value = data.contact_email === undefined ? "" : data.contact_email;
   if (typeof value !== "string" || value.length > 254 || /[\r\n]/.test(value)) {
     throw new RequestError(400, "Enter a valid private contact email address.");
   }
   const email = value.trim();
-  if (!email && !required) return "";
   if (!/^[^\s<>@,;]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$/.test(email)) {
     throw new RequestError(400, "Enter a private contact email address, or contact robert@mq.sc to arrange your event directly.");
   }
@@ -96,12 +95,13 @@ export default {
       if (id && (!Number.isSafeInteger(data.version) || data.version < 1)) {
         throw new RequestError(400, "The event version is missing. Reload the event and try again.");
       }
+      const email = contactEmail(data);
       let saved;
       if (method === "DELETE") {
-        saved = await env.DB.prepare("DELETE FROM events WHERE id=? AND version=? RETURNING id").bind(id, data.version).first();
+        saved = await env.DB.prepare("DELETE FROM events WHERE id=? AND version=? AND contact_email=? COLLATE NOCASE RETURNING id")
+          .bind(id, data.version, email).first();
       } else {
         const event = validate(data), values = Object.keys(fields).map(key => event[key]);
-        const email = contactEmail(data, method === "POST");
         const updated = new Date().toISOString();
         if (method === "POST") {
           saved = await env.DB.prepare(`INSERT INTO events
@@ -109,13 +109,15 @@ export default {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING ${publicColumns}`).bind(...values, email, updated, crypto.randomUUID()).first();
         } else {
           saved = await env.DB.prepare(`UPDATE events SET date=?, start=?, end=?, title=?, description=?, audience=?, organizers=?,
-            contact_email=COALESCE(NULLIF(?, ''), contact_email), updated_at=?, version=version+1
-            WHERE id=? AND version=? RETURNING ${publicColumns}`).bind(...values, email, updated, id, data.version).first();
+            updated_at=?, version=version+1
+            WHERE id=? AND version=? AND contact_email=? COLLATE NOCASE RETURNING ${publicColumns}`)
+            .bind(...values, updated, id, data.version, email).first();
         }
       }
       if (!saved) {
-        const exists = await env.DB.prepare("SELECT id FROM events WHERE id=?").bind(id).first();
+        const exists = await env.DB.prepare("SELECT contact_email=? COLLATE NOCASE AS verified FROM events WHERE id=?").bind(email, id).first();
         if (!exists) throw new RequestError(404, "This event was removed. Your changes have not been saved.");
+        if (!exists.verified) throw new RequestError(403, "The contact email does not match this event. Enter the address used to create it, or contact the MQSF organizers.");
         throw new RequestError(409, "Someone changed this event. Load the latest version before saving or deleting it.");
       }
       ctx?.waitUntil(notifyChanges(env));

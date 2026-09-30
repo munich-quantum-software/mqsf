@@ -5,7 +5,7 @@ The deployed API is <https://mqsf-2026-calendar.mqsf-2026-program.workers.dev/ap
 The old `/api/events` route remains an alias for open tabs. New clients use `/api/meetups` to avoid
 EasyPrivacy's `||workers.dev/api/event` rule, which also blocks `/api/events` on Workers subdomains.
 The `mqsf-2026-calendar` database is already provisioned in the EU; its binding is in `wrangler.jsonc`.
-There are no participant accounts. Everyone can edit or delete events, and revision checks protect concurrent edits.
+There are no participant accounts. Anyone can add an event; editing or deleting requires its original contact email. Revision checks protect concurrent edits.
 At most three sessions may run simultaneously. Database triggers enforce this for additions, edits, and restores,
 including concurrent requests. An event ending exactly when another begins does not overlap it.
 Organizer names are public. Contact emails are private: only the organizers can read them in D1 and their private Discord channel.
@@ -67,8 +67,10 @@ Keep exports outside Git. Cloudflare also provides D1 Time Travel recovery.
 
 ## Private contacts and Discord notifications
 
-New events require a contact email. Editing leaves this field blank: omitting it or submitting an empty string preserves the saved address.
-Supplying an address replaces it, while the old address stays in the private history. This is a contact channel, not identity verification.
+New events require a contact email. Updates and deletions require entering the same address, including through the legacy `/api/events` route.
+The API checks the email and revision in the database mutation itself. It trims surrounding spaces and ignores ASCII letter case; public edits cannot replace the address.
+The address stays hidden in public responses, forms, and error messages. This checks knowledge of the address, not ownership of the mailbox.
+Legacy or example events without a saved address cannot be edited or deleted publicly; organizers can manage them directly through Cloudflare.
 The form explains the purpose and offers direct contact via robert@mq.sc as an alternative.
 
 1. Create a private **text channel on a Discord server** accessible only to Simon, Robert, and trusted server administrators.

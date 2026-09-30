@@ -33,7 +33,7 @@ try {
   const preflight = await request("OPTIONS");
   assert.equal(preflight.status, 204);
   assert.equal(preflight.headers.get("Access-Control-Allow-Origin"), origin);
-  const created = await request("POST", "/api/meetups", draft);
+  const created = await request("POST", "/api/meetups", { ...draft, contact_email: `  ${draft.contact_email}  ` });
   assert.equal(created.status, 201);
   const first = created.data.event, path = `/api/meetups/${first.id}`;
   const { contact_email, ...publicDraft } = draft;
@@ -43,11 +43,23 @@ try {
   const legacyPath = `/api/events/${first.id}`;
   assert.deepEqual((await request("GET", "/api/events")).data.events, [first]);
   assert.equal((await request("POST", "/api/events", { ...draft, start: "10:15", end: "10:30" })).status, 201);
-  const simultaneous = await Promise.all(["One", "Two"].map(title => request("PUT", path, { ...first, title })));
+  for (const route of [path, legacyPath]) {
+    for (const method of ["PUT", "DELETE"]) {
+      for (const email of [undefined, "", null, 123, "invalid", "a@example.test\r\nBcc:x", "wrong@example.test", "x' OR 1=1 --@example.test"]) {
+        const denied = await request(method, route, { ...first, contact_email: email });
+        assert.equal(denied.status, email === "wrong@example.test" ? 403 : 400);
+        assert.ok(!JSON.stringify(denied.data).includes(contact_email), "Errors must not reveal the saved email");
+      }
+      assert.equal((await request(method, route, { ...first, version: 999, contact_email: "wrong@example.test" })).status, 403);
+    }
+  }
+  assert.deepEqual((await request()).data.events.find(e => e.id === first.id), first, "Denied edits and deletes preserve the event");
+  assert.equal((await env.DB.prepare("SELECT COUNT(*) AS n FROM event_changes WHERE event_id=?").bind(first.id).first()).n, 1, "Denied writes create no history or notifications");
+  const simultaneous = await Promise.all(["One", "Two"].map(title => request("PUT", path, { ...first, title, contact_email })));
   assert.deepEqual(simultaneous.map(r => r.status).sort(), [200, 409]);
   const latest = simultaneous.find(r => r.status === 200).data.event;
   assert.equal(latest.version, 2);
-  assert.equal((await request("DELETE", legacyPath, { version: 1 })).status, 409);
+  assert.equal((await request("DELETE", legacyPath, { version: 1, contact_email })).status, 409);
   for (const change of [{ contact_email: "" }, { contact_email: null }, { contact_email: "not-an-email" }, { contact_email: "a@example.test\r\nBcc:x" }, { organizers: " " }, { organizers: "x".repeat(201) }, { audience: null }, { date: "2026-10-16" },
     { start: "24:00" }, { start: "07:59" }, { start: "11:15" }, { end: "09:00" }]) {
     assert.equal((await request("POST", "/api/meetups", { ...draft, ...change })).status, 400);
@@ -55,44 +67,48 @@ try {
   assert.equal((await request("PUT", path, { ...latest, version: true })).status, 400);
   assert.equal((await request("POST", "/api/meetups", { ...draft, description: "x".repeat(20001) })).status, 413);
   assert.equal((await request("POST", "/api/meetups", { ...draft, start: "18:00", end: "21:00" })).status, 201);
-  const edited = await request("PUT", legacyPath, { ...latest, organizers: "Taylor" });
+  const edited = await request("PUT", legacyPath, { ...latest, organizers: "Taylor", contact_email: `  ${contact_email.toUpperCase()}  ` });
   assert.equal(edited.data.event.organizers, "Taylor");
-  assert.equal((await env.DB.prepare("SELECT contact_email FROM events WHERE id=?").bind(first.id).first()).contact_email, contact_email, "Blank edits preserve the hidden address");
-  const replaced = await request("PUT", path, { ...edited.data.event, contact_email: "replacement@example.test" });
-  assert.equal(replaced.status, 200);
-  assert.equal(JSON.stringify(replaced.data).includes("contact_email"), false);
-  assert.equal((await request("DELETE", path, { version: replaced.data.event.version })).status, 200);
+  assert.equal((await env.DB.prepare("SELECT contact_email FROM events WHERE id=?").bind(first.id).first()).contact_email, contact_email, "Verification must not change the stored address");
+  const verified = await request("PUT", path, { ...edited.data.event, title: "Updated with original contact", contact_email });
+  assert.equal(verified.status, 200);
+  assert.equal(JSON.stringify(verified.data).includes("contact_email"), false);
+  assert.equal((await request("DELETE", legacyPath, { version: verified.data.event.version, contact_email: `  ${contact_email.toUpperCase()}  ` })).status, 200);
   const history = (await env.DB.prepare("SELECT * FROM event_changes WHERE event_id=? ORDER BY rowid").bind(first.id).all()).results;
   assert.deepEqual(history.map(row => row.action), ["created", "updated", "updated", "updated", "deleted"], "Conflicts must not create history");
   assert.equal(JSON.parse(history.at(-2).before_json).contact_email, contact_email);
-  assert.equal(JSON.parse(history.at(-1).before_json).contact_email, "replacement@example.test");
+  assert.equal(JSON.parse(history.at(-1).before_json).contact_email, contact_email);
   assert.equal(history.at(-1).after_json, null);
   for (const privatePath of ["/api/history", "/api/event_changes", "/api/meetups/" + first.id]) {
     assert.ok([404, 405].includes((await request("GET", privatePath)).status));
   }
   assert.equal(JSON.stringify((await request()).data).includes("contact_email"), false);
-  assert.equal((await request("PUT", path, edited.data.event)).status, 404);
+  assert.equal((await request("PUT", path, { ...edited.data.event, contact_email })).status, 404);
   assert.equal((await request("GET", "/worker.mjs")).status, 404);
   await apply("./migrations/0002_example_events.sql");
   const seeded = (await request()).data.events;
   const examples = seeded.filter(event => event.title.endsWith(" (example)"));
   assert.equal(examples.length, 5);
   const example = examples[0];
-  await request("PUT", `/api/meetups/${example.id}`, { ...example, title: "Participant's updated title" });
+  for (const method of ["PUT", "DELETE"]) {
+    assert.equal((await request(method, `/api/meetups/${example.id}`, { ...example, contact_email: "" })).status, 400);
+    assert.equal((await request(method, `/api/events/${example.id}`, { ...example, contact_email })).status, 403, "Events without an address cannot be claimed");
+  }
+  await env.DB.prepare("UPDATE events SET title=?, version=version+1 WHERE id=?").bind("Organizer's updated title", example.id).run();
   const beforeReseed = (await request()).data.events;
   await apply("./migrations/0002_example_events.sql");
-  assert.deepEqual((await request()).data.events, beforeReseed, "Seed migration must preserve participants' edits");
+  assert.deepEqual((await request()).data.events, beforeReseed, "Seed migration must preserve edits");
   const deletion = history.at(-1);
   const restored = await env.DB.prepare(restoreSQL(deletion.id, "before", 0)).first();
   assert.equal(restored.id, first.id);
-  assert.equal(restored.version, replaced.data.event.version + 1, "Restoration must invalidate all old versions");
-  assert.equal((await env.DB.prepare("SELECT contact_email FROM events WHERE id=?").bind(first.id).first()).contact_email, "replacement@example.test");
+  assert.equal(restored.version, verified.data.event.version + 1, "Restoration must invalidate all old versions");
+  assert.equal((await env.DB.prepare("SELECT contact_email FROM events WHERE id=?").bind(first.id).first()).contact_email, contact_email);
   assert.equal(await env.DB.prepare(restoreSQL(deletion.id, "before", 0)).first(), null, "Do not overwrite an event recreated since review");
   assert.equal(await env.DB.prepare(restoreSQL(deletion.id, "before", restored.version - 1)).first(), null);
   const reverted = await env.DB.prepare(restoreSQL(history[0].id, "after", restored.version)).first();
   assert.equal(reverted.version, restored.version + 1);
   assert.equal((await env.DB.prepare("SELECT title FROM events WHERE id=?").bind(first.id).first()).title, draft.title);
-  assert.equal((await request("PUT", path, replaced.data.event)).status, 409, "Pre-deletion clients cannot overwrite a restored event");
+  assert.equal((await request("PUT", path, { ...verified.data.event, contact_email })).status, 409, "Pre-deletion clients cannot overwrite a restored event");
 
   // A failed journal write must roll back the public mutation as well.
   const beforeFailure = (await request()).data.events;
@@ -107,7 +123,7 @@ try {
   assert.deepEqual(race.map(result => result.status).sort(), [201, 422], "Only one concurrent save can take the last place");
   const third = race.find(result => result.status === 201).data.event;
   assert.match(race.find(result => result.status === 422).data.error, /At most 3 sessions/);
-  assert.equal((await request("PUT", `/api/meetups/${third.id}`, { ...third, title: "Edited at capacity" })).status, 200, "An edit must not count itself twice");
+  assert.equal((await request("PUT", `/api/meetups/${third.id}`, { ...third, title: "Edited at capacity", contact_email })).status, 200, "An edit must not count itself twice");
   const beforeCapacityFailure = (await request()).data;
   const historyCount = () => env.DB.prepare("SELECT COUNT(*) AS n FROM event_changes").first();
   const journalBefore = await historyCount();
@@ -126,12 +142,12 @@ try {
   assert.equal(otherDay.status, 201, "Days have independent capacity");
   const beforeEdit = (await request()).data, journalBeforeEdit = await historyCount();
   for (const event of [adjacent[0], otherDay.data.event]) {
-    assert.equal((await request("PUT", `/api/meetups/${event.id}`, { ...slot, version: event.version, contact_email: "rejected@example.test" })).status, 422);
+    assert.equal((await request("PUT", `/api/meetups/${event.id}`, { ...slot, version: event.version })).status, 422);
     assert.equal((await env.DB.prepare("SELECT contact_email FROM events WHERE id=?").bind(event.id).first()).contact_email, draft.contact_email);
   }
   assert.deepEqual((await request()).data, beforeEdit, "Rejected edits preserve the event and its version");
   assert.deepEqual(await historyCount(), journalBeforeEdit);
-  assert.equal((await request("DELETE", `/api/meetups/${third.id}`, { version: 2 })).status, 200);
+  assert.equal((await request("DELETE", `/api/meetups/${third.id}`, { version: 2, contact_email })).status, 200);
   const editRace = await Promise.all(adjacent.map(event => request("PUT", `/api/meetups/${event.id}`, { ...slot, version: event.version })));
   assert.deepEqual(editRace.map(result => result.status).sort(), [200, 422], "Concurrent edits also share the last place");
   const removed = await env.DB.prepare("SELECT id FROM event_changes WHERE event_id=? AND action='deleted'").bind(third.id).first();
@@ -154,10 +170,10 @@ try {
   await assert.rejects(env.DB.prepare(assignTableSQL(tableB.id, 1, 1)).first(), /MQSF_TABLE_OCCUPIED/);
   assert.equal((await env.DB.prepare(assignTableSQL(tableB.id, 2, 1)).first()).table_number, 2);
   assert.equal((await env.DB.prepare(assignTableSQL(tableC.id, 1, 1)).first()).table_number, 1, "Back-to-back sessions can reuse a table");
-  const publicEdit = await request("PUT", `/api/meetups/${tableA.id}`, { ...tableA, version: 2, title: "Public edit", table_number: 3 });
+  const publicEdit = await request("PUT", `/api/meetups/${tableA.id}`, { ...tableA, version: 2, title: "Public edit", table_number: 3, contact_email });
   assert.equal(publicEdit.data.event.table_number, 1, "Public edits preserve organizer assignments");
   const beforeTableConflict = (await request()).data, journalBeforeTableConflict = await historyCount();
-  const conflict = await request("PUT", `/api/meetups/${tableC.id}`, { ...tableC, version: 2, start: "21:45" });
+  const conflict = await request("PUT", `/api/meetups/${tableC.id}`, { ...tableC, version: 2, start: "21:45", contact_email });
   assert.equal(conflict.status, 422);
   assert.match(conflict.data.error, /assigned table is already occupied/);
   assert.deepEqual((await request()).data, beforeTableConflict);

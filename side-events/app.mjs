@@ -161,7 +161,6 @@ function openEditor(event = null, date = selectedDay, range = {}) {
   const defaults = { date, start, end: clock(Math.min(minutes(start) + 60, day.end ? minutes(day.end) : 1439)), title: "", organizers: "", description: "", audience: "", ...range };
   for (const key of fields) form.elements.namedItem(key).value = (event || defaults)[key] || "";
   $("event-contact-email").value = "";
-  $("event-contact-email").required = !event;
   $("contact-edit-hint").hidden = !event;
   $("editor-title").textContent = event ? "Edit event" : "Add an event";
   $("save-event").textContent = event ? "Save changes" : "Add event";
@@ -285,10 +284,10 @@ form.addEventListener("submit", async event => {
 });
 
 $("confirm-delete").addEventListener("click", async () => {
-  if (!editing || saving) return;
+  if (!editing || saving || !$("event-contact-email").reportValidity()) return;
   setSaving(true);
   try {
-    await api(`/${editing.id}`, { method: "DELETE", body: JSON.stringify({ version: editing.version }) });
+    await api(`/${editing.id}`, { method: "DELETE", body: JSON.stringify({ version: editing.version, contact_email: $("event-contact-email").value }) });
     ++readSerial;
     events = events.filter(e => e.id !== editing.id); signature = "";
     editor.close(); renderCalendar(); toast("Event deleted from the calendar."); refresh();
@@ -309,7 +308,10 @@ for (const id of ["close-editor", "cancel-editor"]) $(id).addEventListener("clic
 editor.addEventListener("cancel", event => { event.preventDefault(); requestClose(); });
 $("keep-editing").addEventListener("click", () => { $("discard-confirm").hidden = true; $("event-title").focus(); });
 $("discard-draft").addEventListener("click", () => editor.close());
-$("delete-event").addEventListener("click", () => { $("delete-confirm").hidden = false; $("keep-event").focus(); });
+$("delete-event").addEventListener("click", () => {
+  if (!$("event-contact-email").reportValidity()) return;
+  $("delete-confirm").hidden = false; $("keep-event").focus();
+});
 $("keep-event").addEventListener("click", () => { $("delete-confirm").hidden = true; $("delete-event").focus(); });
 $("load-latest").addEventListener("click", async () => {
   if (!await refresh()) return;

@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="./styles.css?v=3">
     <link rel="stylesheet" href="./side-events/styles.css?v=4">
     <script src="./side-events/config.js" defer></script>
-    <script type="module" src="./side-events/app.mjs?v=7"></script>
+    <script type="module" src="./side-events/app.mjs?v=8"></script>
     <script src="./assets/waves.js" defer></script>
     <script src="./script.js?v=3" defer></script>
   </head>
@@ -100,7 +100,7 @@
             </header>
             <div class="community-note">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 4v3"/></svg>
-              <p>Anyone can add or edit an event in the timetable below. No sign-in needed. Up to 3 sessions can run at the same time.</p>
+              <p>Anyone can add an event in the timetable below. To edit or delete an event, enter the contact email used to create it. No sign-in needed. Up to 3 sessions can run at the same time.</p>
             </div>
             <div id="demo-note" class="demo-note" hidden>Local preview · These example events are for trying out the calendar, not confirmed sessions.</div>
             <div class="connection-error" id="connection-error" role="alert" hidden>
@@ -186,7 +186,7 @@
             <label for="event-contact-email">Contact email (private)</label>
             <input type="email" id="event-contact-email" name="contact_email" maxlength="254" autocomplete="off" aria-describedby="contact-hint contact-edit-hint" required>
             <p class="field-hint" id="contact-hint">Your email address is stored privately so the MQSF organizers can contact you about your event or table reservation. It is never displayed in the calendar. Prefer not to submit it here? Email <a href="mailto:robert@mq.sc">robert@mq.sc</a> instead.</p>
-            <p class="field-hint" id="contact-edit-hint" hidden>Leave blank to keep the existing contact email. For privacy, the saved address is never shown here.</p>
+            <p class="field-hint" id="contact-edit-hint" hidden>Enter the contact email used to create this event to save changes or delete it. For privacy, the saved address is never shown here. If you need help, contact the MQSF organizers.</p>
             <div class="time-fields">
               <div><label for="event-date">Day</label><select id="event-date" name="date" required><option value="2026-10-14">Wed, 14 October</option><option value="2026-10-15">Thu, 15 October</option></select></div>
               <div><label for="event-start">Start</label><input type="time" id="event-start" name="start" value="10:00" required></div>
@@ -203,7 +203,7 @@
           <button type="button" class="text-button" id="load-latest" hidden>Load latest version (replaces your draft)</button>
           <div id="discard-confirm" class="confirmation" hidden><p>Discard your unsaved changes?</p><button type="button" class="button button-secondary" id="keep-editing">Keep editing</button><button type="button" class="button button-danger" id="discard-draft">Discard changes</button></div>
           <div id="delete-confirm" class="confirmation" hidden><p>Remove this event from the public timetable? The MQSF organizers keep a private history for recovery.</p><button type="button" class="button button-secondary" id="keep-event">Keep event</button><button type="button" class="button button-danger" id="confirm-delete">Delete event</button></div>
-          <p class="shared-note">Event details are public and anyone can edit them. Contact emails stay private. The MQSF organizers receive notifications and keep a private history of changes and deletions for moderation and recovery.</p>
+          <p class="shared-note">Event details are public. Editing or deleting requires the original contact email, which stays private. The MQSF organizers receive notifications and keep a private history of changes and deletions for moderation and recovery.</p>
           <div class="editor-actions"><button type="button" class="text-button delete-button" id="delete-event" hidden>Delete event</button><div class="dialog-actions"><button type="button" class="button button-secondary" id="cancel-editor">Cancel</button><button type="submit" class="button button-primary" id="save-event">Add event</button></div></div>
         </form>
       </dialog>

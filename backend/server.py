@@ -66,13 +66,11 @@ def read_json(environ):
     return value
 
 
-def contact_email(data, required):
+def contact_email(data):
     value = data.get("contact_email", "")
     if not isinstance(value, str) or len(value) > 254 or "\r" in value or "\n" in value:
         raise RequestError(400, "Enter a valid private contact email address.")
     email = value.strip()
-    if not email and not required:
-        return ""
     if not re.fullmatch(r"[^\s<>@,;]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}", email):
         raise RequestError(400, "Enter a private contact email address, or contact robert@mq.sc to arrange your event directly.")
     return email
@@ -190,27 +188,30 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                 if event_id:
                     if type(data.get("version")) is not int or data["version"] < 1:
                         raise RequestError(400, "The event version is missing. Reload the event and try again.")
-                    if not connection.execute("SELECT 1 FROM events WHERE id = ?", (event_id,)).fetchone():
-                        raise RequestError(404, "This event was removed. Your changes have not been saved.")
+                email = contact_email(data)
                 if method == "DELETE":
-                    result = connection.execute("DELETE FROM events WHERE id = ? AND version = ?", (event_id, data["version"]))
-                    if not result.rowcount:
-                        raise RequestError(409, "Someone changed this event. Load the latest version before deleting it.")
+                    result = connection.execute("DELETE FROM events WHERE id=? AND version=? AND contact_email=? COLLATE NOCASE", (event_id, data["version"], email))
+                else:
+                    event = validate_event(data, config)
+                    values = tuple(event[key] for key in FIELDS)
+                    now = datetime.now(timezone.utc).isoformat()
+                    if method == "POST":
+                        event_id = str(uuid4())
+                        connection.execute("INSERT INTO events (id, date, start, end, title, description, audience, organizers, contact_email, version, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)", (event_id, *values, email, now))
+                    else:
+                        result = connection.execute("""UPDATE events SET date=?, start=?, end=?, title=?, description=?, audience=?, organizers=?,
+                            updated_at=?, version=version+1
+                            WHERE id=? AND version=? AND contact_email=? COLLATE NOCASE""", (*values, now, event_id, data["version"], email))
+                if method != "POST" and not result.rowcount:
+                    existing = connection.execute("SELECT contact_email=? COLLATE NOCASE AS verified FROM events WHERE id=?", (email, event_id)).fetchone()
+                    if not existing:
+                        raise RequestError(404, "This event was removed. Your changes have not been saved.")
+                    if not existing["verified"]:
+                        raise RequestError(403, "The contact email does not match this event. Enter the address used to create it, or contact the MQSF organizers.")
+                    raise RequestError(409, "Someone changed this event. Load the latest version before saving or deleting it.")
+                if method == "DELETE":
                     connection.commit()
                     return reply(200, {"deleted": event_id})
-                event = validate_event(data, config)
-                email = contact_email(data, method == "POST")
-                values = tuple(event[key] for key in FIELDS)
-                now = datetime.now(timezone.utc).isoformat()
-                if method == "POST":
-                    event_id = str(uuid4())
-                    connection.execute("INSERT INTO events (id, date, start, end, title, description, audience, organizers, contact_email, version, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)", (event_id, *values, email, now))
-                else:
-                    result = connection.execute("""UPDATE events SET date=?, start=?, end=?, title=?, description=?, audience=?, organizers=?,
-                        contact_email=COALESCE(NULLIF(?, ''), contact_email), updated_at=?, version=version+1
-                        WHERE id=? AND version=?""", (*values, email, now, event_id, data["version"]))
-                    if not result.rowcount:
-                        raise RequestError(409, "Someone changed this event while you were editing. Your changes have not been saved.")
                 event = dict(connection.execute(f"SELECT {PUBLIC_COLUMNS} FROM events WHERE id=?", (event_id,)).fetchone())
                 connection.commit()
                 return reply(201 if method == "POST" else 200, {"event": event})

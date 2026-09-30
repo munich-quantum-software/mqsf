@@ -5,7 +5,7 @@ Static event website for 14–15 October 2026.
 ## Side events
 
 The [public calendar](https://munich-quantum-software.github.io/mqsf-2026-program/#side-events)
-lets participants create and edit shared side events without an account.
+lets participants create shared side events without an account. Editing or deleting an event requires entering the contact email used to create it.
 Drag across empty calendar space to prefill an event's time range, or use **Add an event**.
 
 The editable two-day calendar is integrated into the main page after Day 2 and before Sponsors.
