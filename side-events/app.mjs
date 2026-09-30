@@ -45,8 +45,6 @@ function chooseDay(date) {
   document.querySelectorAll(".mobile-days button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === date)));
 }
 
-function tone(id) { return [...id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 5; }
-
 function renderCalendar() {
   if (!config) return;
   const focusedEvent = document.activeElement?.dataset.eventId;
@@ -75,15 +73,16 @@ function renderCalendar() {
     }
     for (const event of layoutEvents(dayEvents)) {
       const duration = event.to - event.from;
-      const button = element("button", `event tone-${tone(event.id)}${duration < 30 ? " short" : ""}${duration < 10 ? " tiny" : ""}`);
+      const button = element("button", `event tone-${event.table_number || "unassigned"}${duration < 30 ? " short" : ""}${duration < 10 ? " tiny" : ""}`);
       button.type = "button";
       button.dataset.eventId = event.id;
       button.style.setProperty("--top", `${(event.from - from) * scale}px`);
       button.style.setProperty("--height", `${Math.max(3, duration * scale - 3)}px`);
       button.style.setProperty("--column", event.column);
       button.style.setProperty("--columns", event.columns);
-      button.setAttribute("aria-label", `${event.start} to ${event.end}: ${event.title}. View or edit event.`);
-      button.title = `${event.start}–${event.end} · ${event.title}`;
+      const table = event.table_number ? `Table ${event.table_number}` : "Table not assigned";
+      button.setAttribute("aria-label", `${event.start} to ${event.end}: ${event.title}. ${table}. View or edit event.`);
+      button.title = `${event.start}–${event.end} · ${event.title} · ${table}`;
       button.append(element("span", "event-time", `${event.start}–${event.end}`), element("span", "event-title", event.title));
       if (duration >= 70) button.append(element("span", "event-audience", event.audience));
       button.addEventListener("click", () => openDetails(event.id));
@@ -168,6 +167,7 @@ function openEditor(event = null, date = selectedDay, range = {}) {
   for (const key of fields) form.elements.namedItem(key).value = (event || defaults)[key] || "";
   $("event-contact-email").value = "";
   $("event-table").value = event?.table_number || "";
+  $("event-table").options[0].textContent = event ? "Not assigned" : "Automatic";
   $("contact-hint").textContent = event ? "Enter the email used to create this event." : "For questions about your event or table reservation.";
   updateOrganizerControls();
   $("editor-title").textContent = event ? "Edit event" : "Add an event";
