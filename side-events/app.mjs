@@ -1,4 +1,4 @@
-import { minutes, clock, layoutEvents, selectionRange } from "./calendar.mjs";
+import { minutes, clock, layoutEvents, selectionRange, maxParallelSessions } from "./calendar.mjs?v=2";
 
 const $ = id => document.getElementById(id);
 const fields = ["title", "organizers", "contact_email", "date", "start", "end", "description", "audience"];
@@ -112,6 +112,7 @@ async function refresh() {
     $("connection-error").hidden = true;
     $("sync-status").textContent = "Up to date";
     if (signature !== nextSignature) { signature = nextSignature; renderCalendar(); }
+    if (editor.open) updateTimeHints();
     if (details.open) showDetails(events.find(e => e.id === viewingId));
     return true;
   } catch (error) {
@@ -176,9 +177,11 @@ function updateTimeHints() {
   $("event-start").max = $("event-end").max = day.end || "23:59";
   $("time-hint").textContent = `Munich time · CEST (UTC+2)${day.start && day.end ? ` · Available ${day.start}–${day.end}` : day.start ? ` · From ${day.start}, open end` : ""}`;
   $("event-end").setCustomValidity(data.start && data.end && data.end <= data.start ? "End time must be after start time on the same day." : "");
-  const overlaps = events.filter(e => e.id !== editing?.id && e.date === data.date && e.start < data.end && e.end > data.start);
-  $("overlap-note").hidden = !overlaps.length || data.end <= data.start;
-  $("overlap-note").textContent = `Overlaps with ${overlaps.length} other ${overlaps.length === 1 ? "event" : "events"}. Overlaps are allowed; participants can choose what to attend.`;
+  const peak = maxParallelSessions(events, { ...data, id: editing?.id });
+  $("overlap-note").hidden = !data.start || !data.end || data.end <= data.start;
+  $("overlap-note").textContent = peak > 3
+    ? "This time would exceed the limit of 3 simultaneous sessions. Choose another time."
+    : `Up to ${peak} ${peak === 1 ? "session" : "sessions"} would run at once, including yours. Maximum: 3.`;
 }
 
 function requestClose() {

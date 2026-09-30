@@ -6,6 +6,8 @@ The old `/api/events` route remains an alias for open tabs. New clients use `/ap
 EasyPrivacy's `||workers.dev/api/event` rule, which also blocks `/api/events` on Workers subdomains.
 The `mqsf-2026-calendar` database is already provisioned in the EU; its binding is in `wrangler.jsonc`.
 There are no participant accounts. Everyone can edit or delete events, and revision checks protect concurrent edits.
+At most three sessions may run simultaneously. Database triggers enforce this for additions, edits, and restores,
+including concurrent requests. An event ending exactly when another begins does not overlap it.
 Organizer names are public. Contact emails are private: only the organizers can read them in D1 and their private Discord channel.
 The public API explicitly selects public fields, including in save responses. There are no public history or moderation endpoints.
 No cookies, analytics, or application visitor logs are collected.
@@ -44,6 +46,8 @@ Deployment does not reset the database or recreate deleted examples. Never put t
 The Workers/D1 free plan has daily limits, so check usage in the Cloudflare dashboard during the event.
 
 For later backend updates, run the tests, apply any new migrations, then `npm run deploy:api`.
+For migration 0004, deploy the Worker first so it can explain capacity errors, then apply the migration and publish the frontend.
+The migration only adds capacity checks; it does not change existing events. Check for existing overlaps above three before applying it.
 **Exception for migration 0003:** back up first, deploy the new Worker **before** applying the migration, then publish the form.
 The older Worker returned `SELECT *`, so it must be replaced before private columns exist. Reads continue to work;
 writes may return a temporary 503 until migration 0003 finishes. Never roll back to the old `SELECT *` Worker after this migration.

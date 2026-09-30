@@ -122,6 +122,9 @@ export default {
       return reply(method === "POST" ? 201 : 200, method === "DELETE" ? { deleted: id } : { event: saved });
     } catch (error) {
       if (error instanceof RequestError) return reply(error.status, { error: error.message });
+      if (error.message?.includes("MQSF_MAX_PARALLEL_SESSIONS")) {
+        return reply(422, { error: "At most 3 sessions can run at the same time. Choose another time. Your changes have not been saved." });
+      }
       return reply(503, { error: "The calendar could not save or load events. Please try again. Your draft is still here." });
     }
   },

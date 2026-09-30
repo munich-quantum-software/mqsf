@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { layoutEvents, minutes, clock, selectionRange } from "../side-events/calendar.mjs";
+import { layoutEvents, minutes, clock, selectionRange, maxParallelSessions } from "../side-events/calendar.mjs";
 
 const input = [
   { id: "long", start: "09:00", end: "12:00" },
@@ -21,6 +21,13 @@ for (const a of layout) for (const b of layout) {
 assert.deepEqual(layoutEvents([...input].reverse()), layout, "Stable layout regardless of server order");
 assert.equal(input[0].column, undefined, "Do not mutate event records");
 assert.deepEqual(layoutEvents([]), []);
+const dated = input.map(event => ({ ...event, date: "2026-10-14" }));
+assert.equal(maxParallelSessions(dated, { date: "2026-10-14", start: "10:00", end: "11:00" }), 4);
+assert.equal(maxParallelSessions(dated, dated[1]), 3, "Editing excludes the original record");
+assert.equal(maxParallelSessions(dated, { date: "2026-10-15", start: "10:00", end: "11:00" }), 1);
+assert.equal(maxParallelSessions(dated, { date: "2026-10-14", start: "11:30", end: "12:00" }), 2, "Ignore peaks outside the proposed interval");
+const staggered = [9, 10, 11].map(hour => ({ id: String(hour), date: "2026-10-14", start: clock(hour * 60), end: clock((hour + 1) * 60) }));
+assert.equal(maxParallelSessions(staggered, { date: "2026-10-14", start: "09:00", end: "12:00" }), 2, "Three staggered intersections only need two simultaneous places");
 assert.equal(clock(minutes("23:59")), "23:59");
 assert.equal(clock(1440), "24:00");
 for (const [anchor, cursor, min, max, start, end] of [

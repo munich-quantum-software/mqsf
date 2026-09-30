@@ -111,6 +111,8 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
         if "contact_email" not in {row["name"] for row in connection.execute("PRAGMA table_info(events)")}:
             migration = (ROOT / "cloudflare/migrations/0003_private_contacts_and_history.sql").read_text()
             connection.executescript("BEGIN;\n" + migration + "\nCOMMIT;")
+        migration = (ROOT / "cloudflare/migrations/0004_parallel_session_limit.sql").read_text()
+        connection.executescript("BEGIN;\n" + migration + "\nCOMMIT;")
         if (demo or seed_examples) and not connection.execute("SELECT 1 FROM events LIMIT 1").fetchone():
             examples = [
                 ("2026-10-14", "10:00", "11:15", "MQT developers meeting", "Compare ideas for the next MQT release and discuss opportunities to contribute.", "MQT contributors and anyone interested in contributing"),
@@ -211,7 +213,9 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                 return reply(201 if method == "POST" else 200, {"event": event})
         except RequestError as error:
             return reply(error.status, {"error": error.message})
-        except sqlite3.Error:
+        except sqlite3.Error as error:
+            if "MQSF_MAX_PARALLEL_SESSIONS" in str(error):
+                return reply(422, {"error": "At most 3 sessions can run at the same time. Choose another time. Your changes have not been saved."})
             return reply(503, {"error": "The calendar could not save or load events. Please try again. Your draft is still here."})
 
     return application

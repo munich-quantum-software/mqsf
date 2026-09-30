@@ -24,6 +24,7 @@ async function apply(file, db = env.DB) {
 try {
   await apply("./migrations/0001_events.sql");
   await apply("./migrations/0003_private_contacts_and_history.sql");
+  await apply("./migrations/0004_parallel_session_limit.sql");
   assert.deepEqual((await request()).data, { events: [], demo: false });
   const draft = { date: "2026-10-14", start: "10:00", end: "11:15", title: "Meetup <b>plain text</b>",
     description: "Bring a laptop.\nAll welcome.", audience: "Developers", organizers: "Alex & Sam", contact_email: "private@example.test" };
@@ -40,7 +41,7 @@ try {
   // Already-open clients can still read and edit the same records through the old route.
   const legacyPath = `/api/events/${first.id}`;
   assert.deepEqual((await request("GET", "/api/events")).data.events, [first]);
-  assert.equal((await request("POST", "/api/events", { ...draft, start: "10:30", end: "11:30" })).status, 201);
+  assert.equal((await request("POST", "/api/events", { ...draft, start: "10:15", end: "10:30" })).status, 201);
   const simultaneous = await Promise.all(["One", "Two"].map(title => request("PUT", path, { ...first, title })));
   assert.deepEqual(simultaneous.map(r => r.status).sort(), [200, 409]);
   const latest = simultaneous.find(r => r.status === 200).data.event;
@@ -95,9 +96,48 @@ try {
   // A failed journal write must roll back the public mutation as well.
   const beforeFailure = (await request()).data.events;
   await env.DB.prepare("CREATE TRIGGER reject_history BEFORE INSERT ON event_changes BEGIN SELECT RAISE(ABORT, 'test failure'); END").run();
-  assert.equal((await request("POST", "/api/meetups", draft)).status, 503);
+  assert.equal((await request("POST", "/api/meetups", { ...draft, date: "2026-10-15", start: "16:00", end: "17:00" })).status, 503);
   assert.deepEqual((await request()).data.events, beforeFailure);
   await env.DB.prepare("DROP TRIGGER reject_history").run();
+
+  const slot = { ...draft, date: "2026-10-15", start: "13:00", end: "14:00" };
+  for (let i = 0; i < 2; i++) assert.equal((await request("POST", "/api/meetups", slot)).status, 201);
+  const race = await Promise.all([1, 2].map(() => request("POST", "/api/meetups", slot)));
+  assert.deepEqual(race.map(result => result.status).sort(), [201, 422], "Only one concurrent save can take the last place");
+  const third = race.find(result => result.status === 201).data.event;
+  assert.match(race.find(result => result.status === 422).data.error, /At most 3 sessions/);
+  assert.equal((await request("PUT", `/api/meetups/${third.id}`, { ...third, title: "Edited at capacity" })).status, 200, "An edit must not count itself twice");
+  const beforeCapacityFailure = (await request()).data;
+  const historyCount = () => env.DB.prepare("SELECT COUNT(*) AS n FROM event_changes").first();
+  const journalBefore = await historyCount();
+  for (const times of [{ start: "13:15", end: "13:45" }, { start: "12:00", end: "15:00" }]) {
+    assert.equal((await request("POST", "/api/events", { ...slot, ...times })).status, 422, "Check the entire requested interval");
+  }
+  assert.deepEqual((await request()).data, beforeCapacityFailure);
+  assert.deepEqual(await historyCount(), journalBefore, "Rejected saves must not generate history or notifications");
+  const adjacent = [];
+  for (const times of [{ start: "12:00", end: "13:00" }, { start: "14:00", end: "15:00" }]) {
+    const result = await request("POST", "/api/meetups", { ...slot, ...times });
+    assert.equal(result.status, 201, "Touching endpoints are allowed");
+    adjacent.push(result.data.event);
+  }
+  const otherDay = await request("POST", "/api/meetups", { ...slot, date: "2026-10-14" });
+  assert.equal(otherDay.status, 201, "Days have independent capacity");
+  const beforeEdit = (await request()).data, journalBeforeEdit = await historyCount();
+  for (const event of [adjacent[0], otherDay.data.event]) {
+    assert.equal((await request("PUT", `/api/meetups/${event.id}`, { ...slot, version: event.version, contact_email: "rejected@example.test" })).status, 422);
+    assert.equal((await env.DB.prepare("SELECT contact_email FROM events WHERE id=?").bind(event.id).first()).contact_email, draft.contact_email);
+  }
+  assert.deepEqual((await request()).data, beforeEdit, "Rejected edits preserve the event and its version");
+  assert.deepEqual(await historyCount(), journalBeforeEdit);
+  assert.equal((await request("DELETE", `/api/meetups/${third.id}`, { version: 2 })).status, 200);
+  const editRace = await Promise.all(adjacent.map(event => request("PUT", `/api/meetups/${event.id}`, { ...slot, version: event.version })));
+  assert.deepEqual(editRace.map(result => result.status).sort(), [200, 422], "Concurrent edits also share the last place");
+  const removed = await env.DB.prepare("SELECT id FROM event_changes WHERE event_id=? AND action='deleted'").bind(third.id).first();
+  await assert.rejects(env.DB.prepare(restoreSQL(removed.id, "before", 0)).first(), /MQSF_MAX_PARALLEL_SESSIONS/, "Restores cannot exceed capacity");
+  for (const [start, end] of [["17:00", "18:00"], ["18:00", "19:00"], ["19:00", "20:00"], ["17:00", "20:00"]]) {
+    assert.equal((await request("POST", "/api/meetups", { ...slot, start, end })).status, 201, "Count simultaneous sessions, not total intersecting events");
+  }
 
   const realFetch = globalThis.fetch, deliveries = [];
   let releaseDelivery, sawDelivery;

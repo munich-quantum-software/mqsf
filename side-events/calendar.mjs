@@ -14,6 +14,16 @@ export function selectionRange(anchor, cursor, min, max) {
   return { start: clock(start), end: clock(Math.max(start + 15, snap(anchor), snap(cursor))) };
 }
 
+export function maxParallelSessions(events, candidate) {
+  // Clip to the candidate's interval: peaks outside it must not count.
+  const overlaps = events.filter(event => event.id !== candidate.id && event.date === candidate.date
+    && event.start < candidate.end && event.end > candidate.start).map(event => ({ ...event,
+    start: event.start < candidate.start ? candidate.start : event.start,
+    end: event.end > candidate.end ? candidate.end : event.end,
+  }));
+  return 1 + layoutEvents(overlaps).reduce((peak, event) => Math.max(peak, event.columns), 0);
+}
+
 // Interval partitioning: overlapping events get separate lanes; touching events do not overlap.
 export function layoutEvents(events) {
   const sorted = events.map(event => ({ ...event, from: minutes(event.start), to: minutes(event.end) }))

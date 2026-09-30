@@ -110,4 +110,33 @@ with TemporaryDirectory() as directory:
     assert request(create_app(seeded_db, seed_examples=True))[1] == examples, "Seeding must not duplicate or replace existing events"
     before = request(app)[1]
     assert request(create_app(database, seed_examples=True))[1] == before, "Seeding must leave an existing calendar untouched"
+    capped_db = Path(directory) / "capped.sqlite3"
+    capped = create_app(capped_db)
+    for _ in range(2):
+        assert request(capped, "POST", data=event)[0] == 201
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: request(capped, "POST", data=event), range(2)))
+    assert sorted(r[0] for r in results) == [201, 422], "Only one concurrent save can take the last place"
+    third = next(r[1]["event"] for r in results if r[0] == 201)
+    assert request(capped, "PUT", "/api/meetups/" + third["id"], {**third, "title": "Edited at capacity"})[0] == 200
+    before_rejected = request(capped)[1]
+    assert request(capped, "POST", data={**event, "start": "09:00", "end": "12:00"})[0] == 422
+    assert request(capped)[1] == before_rejected
+    with sqlite3.connect(capped_db) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM event_changes").fetchone()[0] == 4
+    adjacent = []
+    for start, end in [("09:00", "10:00"), ("11:00", "12:00")]:
+        status, data, _ = request(capped, "POST", data={**event, "start": start, "end": end})
+        assert status == 201, "Touching endpoints are allowed"
+        adjacent.append(data["event"])
+    assert request(capped, "POST", data={**event, "date": "2026-10-15"})[0] == 201
+    before_rejected = request(capped)[1]
+    assert request(capped, "PUT", "/api/events/" + adjacent[0]["id"], {**event, "version": 1})[0] == 422
+    assert request(capped)[1] == before_rejected, "Rejected edits preserve the original event"
+    assert request(capped, "DELETE", "/api/meetups/" + third["id"], {"version": 2})[0] == 200
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda e: request(capped, "PUT", "/api/meetups/" + e["id"], {**event, "version": 1})[0], adjacent))
+    assert sorted(results) == [200, 422], "Concurrent edits cannot overbook the last place"
+    for start, end in [("17:00", "18:00"), ("18:00", "19:00"), ("19:00", "20:00"), ("17:00", "20:00")]:
+        assert request(capped, "POST", data={**event, "start": start, "end": end})[0] == 201
 print("Calendar API checks passed: persistence, organizers, migration, concurrent edits, deletion, hours, navigation, and path isolation.")
