@@ -181,8 +181,13 @@ function openEditor(event = null, date = selectedDay, range = {}) {
 
 function updateTimeHints() {
   const data = draft(), day = config.days.find(d => d.date === data.date);
-  $("event-start").min = $("event-end").min = day.start || "00:00";
-  $("event-start").max = $("event-end").max = day.end || "23:59";
+  const min = day.start || "00:00", max = day.end || "23:59";
+  // Reassigning bounds interrupts multi-digit typing in native time inputs.
+  for (const id of ["event-start", "event-end"]) {
+    const input = $(id);
+    if (input.min !== min) input.min = min;
+    if (input.max !== max) input.max = max;
+  }
   $("time-hint").textContent = `Munich time · CEST (UTC+2)${day.start && day.end ? ` · Available ${day.start}–${day.end}` : day.start ? ` · From ${day.start}, open end` : ""}`;
   $("event-end").setCustomValidity(data.start && data.end && data.end <= data.start ? "End time must be after start time on the same day." : "");
   const peak = maxParallelSessions(events, { ...data, id: editing?.id });
