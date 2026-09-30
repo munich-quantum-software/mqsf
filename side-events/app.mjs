@@ -134,6 +134,7 @@ function showDetails(event) {
   $("details-title").textContent = event.title;
   $("details-time").textContent = `${dateLabel(event.date)} · ${event.start}–${event.end} CEST`;
   $("details-organizers").textContent = event.organizers || "Not specified yet";
+  $("details-table").textContent = event.table_number ? `Table ${event.table_number}` : "To be assigned by the MQSF organizers";
   $("details-description").textContent = event.description;
   $("details-audience").textContent = event.audience;
   const updated = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: config.timezone }).format(new Date(event.updated_at));

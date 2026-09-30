@@ -48,6 +48,7 @@ The Workers/D1 free plan has daily limits, so check usage in the Cloudflare dash
 For later backend updates, run the tests, apply any new migrations, then `npm run deploy:api`.
 For migration 0004, deploy the Worker first so it can explain capacity errors, then apply the migration and publish the frontend.
 The migration only adds capacity checks; it does not change existing events. Check for existing overlaps above three before applying it.
+For migration 0005, apply the migration first, then deploy the Worker and frontend. Existing sessions start unassigned.
 **Exception for migration 0003:** back up first, deploy the new Worker **before** applying the migration, then publish the form.
 The older Worker returned `SELECT *`, so it must be replaced before private columns exist. Reads continue to work;
 writes may return a temporary 503 until migration 0003 finishes. Never roll back to the old `SELECT *` Worker after this migration.
@@ -107,6 +108,23 @@ Use `before` to undo an edit/deletion, or `after` to recover a selected saved st
 otherwise use `current_version` from `list`. A stale version or missing snapshot returns no rows and changes nothing.
 Restoration generates a new revision and history entry, so stale browser drafts cannot overwrite it, and the restore is also notified.
 `show` contains private addresses. Do not paste its output, private Discord messages, or database exports into public issues.
+
+## Assign tables
+
+Each session has an optional `table_number` (1, 2, or 3). Assign it later using the existing organizer login:
+
+```sh
+node cloudflare/moderate.mjs tables
+node cloudflare/moderate.mjs assign-table EVENT_ID 1 CURRENT_VERSION
+# After reviewing the dry run:
+node cloudflare/moderate.mjs assign-table EVENT_ID 1 CURRENT_VERSION --apply
+```
+
+Use `none` instead of a number to clear an assignment. Get the event ID and current version from `tables`.
+Assignments appear in event details and Discord notifications. Only organizers with database access can change them;
+public event edits preserve the saved table. The database rejects overlapping sessions at the same table, including
+time changes and restored events. Back-to-back sessions and sessions on different days can reuse a table.
+Assignments increment the event revision and are included in the private change history, so they can be undone with `restore`.
 
 History and contacts are retained for moderation; there is no automatic deletion job. After event follow-up, remove private data
 from D1, private Discord notifications, and any local exports according to the organizers' retention decision.

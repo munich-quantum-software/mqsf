@@ -5,7 +5,7 @@ import { getPlatformProxy, unstable_splitSqlQuery } from "wrangler";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import worker from "./worker.mjs";
 import { notifyChanges, discordMessages } from "./notifications.mjs";
-import { restoreSQL } from "./moderate.mjs";
+import { restoreSQL, assignTableSQL } from "./moderate.mjs";
 
 const platform = await getPlatformProxy({ configPath: "cloudflare/wrangler.jsonc", persist: false, remoteBindings: false });
 const { env } = platform;
@@ -25,6 +25,7 @@ try {
   await apply("./migrations/0001_events.sql");
   await apply("./migrations/0003_private_contacts_and_history.sql");
   await apply("./migrations/0004_parallel_session_limit.sql");
+  await apply("./migrations/0005_table_assignments.sql");
   assert.deepEqual((await request()).data, { events: [], demo: false });
   const draft = { date: "2026-10-14", start: "10:00", end: "11:15", title: "Meetup <b>plain text</b>",
     description: "Bring a laptop.\nAll welcome.", audience: "Developers", organizers: "Alex & Sam", contact_email: "private@example.test" };
@@ -36,7 +37,7 @@ try {
   assert.equal(created.status, 201);
   const first = created.data.event, path = `/api/meetups/${first.id}`;
   const { contact_email, ...publicDraft } = draft;
-  assert.deepEqual(first, { ...publicDraft, id: first.id, version: 1, updated_at: first.updated_at });
+  assert.deepEqual(first, { ...publicDraft, id: first.id, version: 1, updated_at: first.updated_at, table_number: null });
   assert.deepEqual((await request()).data.events, [first]);
   // Already-open clients can still read and edit the same records through the old route.
   const legacyPath = `/api/events/${first.id}`;
@@ -138,6 +139,44 @@ try {
   for (const [start, end] of [["17:00", "18:00"], ["18:00", "19:00"], ["19:00", "20:00"], ["17:00", "20:00"]]) {
     assert.equal((await request("POST", "/api/meetups", { ...slot, start, end })).status, 201, "Count simultaneous sessions, not total intersecting events");
   }
+
+  const tableEvents = [];
+  for (const [start, end] of [["21:00", "22:00"], ["21:30", "22:30"], ["22:00", "23:00"]]) {
+    const result = await request("POST", "/api/meetups", { ...slot, start, end, table_number: 3 });
+    assert.equal(result.status, 201);
+    assert.equal(result.data.event.table_number, null, "Public requests cannot assign tables");
+    tableEvents.push(result.data.event);
+  }
+  const [tableA, tableB, tableC] = tableEvents;
+  assert.equal((await env.DB.prepare(assignTableSQL(tableA.id, 1, 1)).first()).table_number, 1);
+  assert.equal(await env.DB.prepare(assignTableSQL(tableA.id, 2, 1)).first(), null, "Stale assignments must not overwrite changes");
+  assert.equal(await env.DB.prepare(assignTableSQL(tableA.id, 1, 2)).first(), null, "An unchanged assignment creates no revision");
+  await assert.rejects(env.DB.prepare(assignTableSQL(tableB.id, 1, 1)).first(), /MQSF_TABLE_OCCUPIED/);
+  assert.equal((await env.DB.prepare(assignTableSQL(tableB.id, 2, 1)).first()).table_number, 2);
+  assert.equal((await env.DB.prepare(assignTableSQL(tableC.id, 1, 1)).first()).table_number, 1, "Back-to-back sessions can reuse a table");
+  const publicEdit = await request("PUT", `/api/meetups/${tableA.id}`, { ...tableA, version: 2, title: "Public edit", table_number: 3 });
+  assert.equal(publicEdit.data.event.table_number, 1, "Public edits preserve organizer assignments");
+  const beforeTableConflict = (await request()).data, journalBeforeTableConflict = await historyCount();
+  const conflict = await request("PUT", `/api/meetups/${tableC.id}`, { ...tableC, version: 2, start: "21:45" });
+  assert.equal(conflict.status, 422);
+  assert.match(conflict.data.error, /assigned table is already occupied/);
+  assert.deepEqual((await request()).data, beforeTableConflict);
+  assert.deepEqual(await historyCount(), journalBeforeTableConflict);
+  const assignments = await Promise.allSettled([
+    env.DB.prepare(assignTableSQL(tableA.id, 3, 3)).first(),
+    env.DB.prepare(assignTableSQL(tableB.id, 3, 2)).first(),
+  ]);
+  assert.deepEqual(assignments.map(result => result.status).sort(), ["fulfilled", "rejected"], "Overlapping sessions cannot race for the same table");
+  assert.equal((await env.DB.prepare(assignTableSQL(tableC.id, null, 2)).first()).table_number, null);
+  const clearedTable = await env.DB.prepare("SELECT * FROM event_changes WHERE event_id=? ORDER BY rowid DESC LIMIT 1").bind(tableC.id).first();
+  assert.equal(JSON.parse(clearedTable.before_json).table_number, 1);
+  assert.equal(JSON.parse(clearedTable.after_json).table_number, null);
+  await env.DB.prepare(restoreSQL(clearedTable.id, "before", 3)).first();
+  assert.equal((await request()).data.events.find(event => event.id === tableC.id).table_number, 1, "Undo restores the table assignment");
+  const notification = discordMessages(clearedTable)[0].embeds[0].fields.find(field => field.name === "Table changed");
+  assert.deepEqual(notification, { name: "Table changed", value: "**Before**\n1\n\n**After**\nNot assigned" });
+  assert.throws(() => assignTableSQL(tableA.id, 4, 1));
+  await assert.rejects(env.DB.prepare("UPDATE events SET table_number=4 WHERE id=?").bind(tableA.id).run(), /CHECK constraint/);
 
   const realFetch = globalThis.fetch, deliveries = [];
   let releaseDelivery, sawDelivery;
@@ -246,6 +285,7 @@ try {
     const db = await runtime.getD1Database("DB");
     await apply("./migrations/0001_events.sql", db);
     await apply("./migrations/0003_private_contacts_and_history.sql", db);
+    await apply("./migrations/0005_table_assignments.sql", db);
     await db.prepare("INSERT INTO events(id,date,start,end,title,description,audience,organizers,contact_email,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)")
       .bind(crypto.randomUUID(), draft.date, draft.start, draft.end, draft.title, draft.description, draft.audience, draft.organizers, contact_email, new Date().toISOString()).run();
     await runtime.dispatchFetch("http://localhost/");

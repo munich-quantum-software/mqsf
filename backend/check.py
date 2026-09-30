@@ -35,7 +35,8 @@ with TemporaryDirectory() as directory:
     assert status == 201 and headers["Access-Control-Allow-Origin"] == "https://munich-quantum-software.github.io"
     first = data["event"]
     assert first["title"] == event["title"] and first["version"] == 1
-    assert set(first) == (set(event) - {"contact_email"}) | {"id", "version", "updated_at"}, "Store only event data and revision metadata"
+    assert set(first) == (set(event) - {"contact_email"}) | {"id", "version", "updated_at", "table_number"}, "Store only public event data and revision metadata"
+    assert first["table_number"] is None
     assert first["organizers"] == event["organizers"]
     second_client = create_app(database)
     assert request(second_client)[1]["events"] == [first], "Edits must persist across clients and restarts"
@@ -139,4 +140,19 @@ with TemporaryDirectory() as directory:
     assert sorted(results) == [200, 422], "Concurrent edits cannot overbook the last place"
     for start, end in [("17:00", "18:00"), ("18:00", "19:00"), ("19:00", "20:00"), ("17:00", "20:00")]:
         assert request(capped, "POST", data={**event, "start": start, "end": end})[0] == 201
+    tables_db = Path(directory) / "tables.sqlite3"
+    tables = create_app(tables_db)
+    a = request(tables, "POST", data={**event, "table_number": 3})[1]["event"]
+    b = request(tables, "POST", data={**event, "start": "11:00", "end": "12:00"})[1]["event"]
+    assert a["table_number"] is None, "Public requests cannot assign tables"
+    with sqlite3.connect(tables_db) as connection:
+        connection.execute("UPDATE events SET table_number=1, version=version+1")
+        row = connection.execute("SELECT after_json FROM event_changes WHERE event_id=? ORDER BY rowid DESC LIMIT 1", (a["id"],)).fetchone()
+        assert json.loads(row[0])["table_number"] == 1
+    public_edit = request(tables, "PUT", "/api/meetups/" + a["id"], {**a, "version": 2, "table_number": 2})
+    assert public_edit[0] == 200 and public_edit[1]["event"]["table_number"] == 1
+    before_conflict = request(tables)[1]
+    conflict = request(tables, "PUT", "/api/meetups/" + b["id"], {**b, "version": 2, "start": "10:30"})
+    assert conflict[0] == 422 and "assigned table is already occupied" in conflict[1]["error"]
+    assert request(tables)[1] == before_conflict
 print("Calendar API checks passed: persistence, organizers, migration, concurrent edits, deletion, hours, navigation, and path isolation.")

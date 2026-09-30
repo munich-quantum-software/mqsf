@@ -2,7 +2,7 @@ import conference from "../side-events/conference.json" with { type: "json" };
 import { notifyChanges } from "./notifications.mjs";
 
 const fields = { date: 10, start: 5, end: 5, title: 120, description: 3000, audience: 300, organizers: 200 };
-const publicColumns = [...Object.keys(fields), "id", "version", "updated_at"].join(", ");
+const publicColumns = [...Object.keys(fields), "id", "version", "updated_at", "table_number"].join(", ");
 class RequestError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }
@@ -124,6 +124,9 @@ export default {
       if (error instanceof RequestError) return reply(error.status, { error: error.message });
       if (error.message?.includes("MQSF_MAX_PARALLEL_SESSIONS")) {
         return reply(422, { error: "At most 3 sessions can run at the same time. Choose another time. Your changes have not been saved." });
+      }
+      if (error.message?.includes("MQSF_TABLE_OCCUPIED")) {
+        return reply(422, { error: "The assigned table is already occupied at that time. Choose another time or ask the MQSF organizers to change the table assignment. Your changes have not been saved." });
       }
       return reply(503, { error: "The calendar could not save or load events. Please try again. Your draft is still here." });
     }

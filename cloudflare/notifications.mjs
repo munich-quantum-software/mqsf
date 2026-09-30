@@ -1,4 +1,4 @@
-const labels = { title: "Title", date: "Day", start: "Start time", end: "End time", organizers: "Organizer(s)", contact_email: "Contact email (private)", description: "Description", audience: "Intended audience" };
+const labels = { title: "Title", date: "Day", start: "Start time", end: "End time", organizers: "Organizer(s)", contact_email: "Contact email (private)", description: "Description", audience: "Intended audience", table_number: "Table" };
 function display(value) {
   return String(value || "Not supplied").replace(/[\\`*_~|\[\]()<>]/g, "\\$&");
 }
@@ -24,13 +24,17 @@ export function discordMessages(change) {
   ];
   if (before && after) {
     for (const [key, label] of Object.entries(labels)) {
-      if (before[key] !== after[key]) {
-        const value = `**Before**\n${display(before[key])}\n\n**After**\n${display(after[key])}`;
+      if ((before[key] ?? null) !== (after[key] ?? null)) {
+        const empty = key === "table_number" ? "Not assigned" : null;
+        const value = `**Before**\n${display(before[key] ?? empty)}\n\n**After**\n${display(after[key] ?? empty)}`;
         if (value.length <= 1024) fields.push({ name: `${label} changed`, value });
         else fields.push(...textFields(`${label} · Before`, before[key]), ...textFields(`${label} · After`, after[key]));
       }
     }
     if (fields.length === 2) fields.push({ name: "No content changes", value: "The event was saved without changing its details." });
+  }
+  if (event.table_number != null && (!before || !after || before.table_number === after.table_number)) {
+    fields.push({ name: "Table", value: String(event.table_number), inline: true });
   }
   for (const key of ["description", "audience"]) {
     if (!before || !after || before[key] === after[key]) fields.push(...textFields(labels[key], event[key]));
