@@ -1,7 +1,9 @@
 # Cloudflare hosting
 
-GitHub Pages serves the website. A Cloudflare Worker handles `/api/events` and saves events in D1.
-The deployed API is <https://mqsf-2026-calendar.mqsf-2026-program.workers.dev/api/events>.
+GitHub Pages serves the website. A Cloudflare Worker handles `/api/meetups` and saves events in D1.
+The deployed API is <https://mqsf-2026-calendar.mqsf-2026-program.workers.dev/api/meetups>.
+The old `/api/events` route remains an alias for open tabs. New clients use `/api/meetups` to avoid
+EasyPrivacy's `||workers.dev/api/event` rule, which also blocks `/api/events` on Workers subdomains.
 The `mqsf-2026-calendar` database is already provisioned in the EU; its binding is in `wrangler.jsonc`.
 There are no participant accounts. Everyone can edit or delete events, and revision checks protect concurrent edits.
 Organizer names are public. Contact emails are private: only the organizers can read them in D1 and their private Discord channel.

@@ -153,7 +153,7 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                     calendar_path = True
                     break
             method = environ["REQUEST_METHOD"]
-            match = re.fullmatch(r"/api/events(?:/([a-f0-9-]{36}))?", path)
+            match = re.fullmatch(r"/api/(?:meetups|events)(?:/([a-f0-9-]{36}))?", path)
             if not match:
                 filename = "index.html" if path == "/" else path.lstrip("/")
                 public = PUBLIC if calendar_path else ROOT

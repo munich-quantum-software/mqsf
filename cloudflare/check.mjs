@@ -10,7 +10,7 @@ import { restoreSQL } from "./moderate.mjs";
 const platform = await getPlatformProxy({ configPath: "cloudflare/wrangler.jsonc", persist: false, remoteBindings: false });
 const { env } = platform;
 const origin = "https://munich-quantum-software.github.io";
-async function request(method = "GET", path = "/api/events", data, from = origin) {
+async function request(method = "GET", path = "/api/meetups", data, from = origin) {
   const response = await worker.fetch(new Request(`https://calendar.example${path}`, {
     method, headers: { Origin: from, ...(data !== undefined ? { "Content-Type": "application/json" } : {}) },
     ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
@@ -27,30 +27,33 @@ try {
   assert.deepEqual((await request()).data, { events: [], demo: false });
   const draft = { date: "2026-10-14", start: "10:00", end: "11:15", title: "Meetup <b>plain text</b>",
     description: "Bring a laptop.\nAll welcome.", audience: "Developers", organizers: "Alex & Sam", contact_email: "private@example.test" };
-  assert.equal((await request("POST", "/api/events", draft, "https://unrelated.example")).status, 403);
+  assert.equal((await request("POST", "/api/meetups", draft, "https://unrelated.example")).status, 403);
   const preflight = await request("OPTIONS");
   assert.equal(preflight.status, 204);
   assert.equal(preflight.headers.get("Access-Control-Allow-Origin"), origin);
-  const created = await request("POST", "/api/events", draft);
+  const created = await request("POST", "/api/meetups", draft);
   assert.equal(created.status, 201);
-  const first = created.data.event, path = `/api/events/${first.id}`;
+  const first = created.data.event, path = `/api/meetups/${first.id}`;
   const { contact_email, ...publicDraft } = draft;
   assert.deepEqual(first, { ...publicDraft, id: first.id, version: 1, updated_at: first.updated_at });
   assert.deepEqual((await request()).data.events, [first]);
+  // Already-open clients can still read and edit the same records through the old route.
+  const legacyPath = `/api/events/${first.id}`;
+  assert.deepEqual((await request("GET", "/api/events")).data.events, [first]);
   assert.equal((await request("POST", "/api/events", { ...draft, start: "10:30", end: "11:30" })).status, 201);
   const simultaneous = await Promise.all(["One", "Two"].map(title => request("PUT", path, { ...first, title })));
   assert.deepEqual(simultaneous.map(r => r.status).sort(), [200, 409]);
   const latest = simultaneous.find(r => r.status === 200).data.event;
   assert.equal(latest.version, 2);
-  assert.equal((await request("DELETE", path, { version: 1 })).status, 409);
+  assert.equal((await request("DELETE", legacyPath, { version: 1 })).status, 409);
   for (const change of [{ contact_email: "" }, { contact_email: null }, { contact_email: "not-an-email" }, { contact_email: "a@example.test\r\nBcc:x" }, { organizers: " " }, { organizers: "x".repeat(201) }, { audience: null }, { date: "2026-10-16" },
     { start: "24:00" }, { start: "07:59" }, { start: "11:15" }, { end: "09:00" }]) {
-    assert.equal((await request("POST", "/api/events", { ...draft, ...change })).status, 400);
+    assert.equal((await request("POST", "/api/meetups", { ...draft, ...change })).status, 400);
   }
   assert.equal((await request("PUT", path, { ...latest, version: true })).status, 400);
-  assert.equal((await request("POST", "/api/events", { ...draft, description: "x".repeat(20001) })).status, 413);
-  assert.equal((await request("POST", "/api/events", { ...draft, start: "18:00", end: "21:00" })).status, 201);
-  const edited = await request("PUT", path, { ...latest, organizers: "Taylor" });
+  assert.equal((await request("POST", "/api/meetups", { ...draft, description: "x".repeat(20001) })).status, 413);
+  assert.equal((await request("POST", "/api/meetups", { ...draft, start: "18:00", end: "21:00" })).status, 201);
+  const edited = await request("PUT", legacyPath, { ...latest, organizers: "Taylor" });
   assert.equal(edited.data.event.organizers, "Taylor");
   assert.equal((await env.DB.prepare("SELECT contact_email FROM events WHERE id=?").bind(first.id).first()).contact_email, contact_email, "Blank edits preserve the hidden address");
   const replaced = await request("PUT", path, { ...edited.data.event, contact_email: "replacement@example.test" });
@@ -62,7 +65,7 @@ try {
   assert.equal(JSON.parse(history.at(-2).before_json).contact_email, contact_email);
   assert.equal(JSON.parse(history.at(-1).before_json).contact_email, "replacement@example.test");
   assert.equal(history.at(-1).after_json, null);
-  for (const privatePath of ["/api/history", "/api/event_changes", "/api/events/" + first.id]) {
+  for (const privatePath of ["/api/history", "/api/event_changes", "/api/meetups/" + first.id]) {
     assert.ok([404, 405].includes((await request("GET", privatePath)).status));
   }
   assert.equal(JSON.stringify((await request()).data).includes("contact_email"), false);
@@ -73,7 +76,7 @@ try {
   const examples = seeded.filter(event => event.title.endsWith(" (example)"));
   assert.equal(examples.length, 5);
   const example = examples[0];
-  await request("PUT", `/api/events/${example.id}`, { ...example, title: "Participant's updated title" });
+  await request("PUT", `/api/meetups/${example.id}`, { ...example, title: "Participant's updated title" });
   const beforeReseed = (await request()).data.events;
   await apply("./migrations/0002_example_events.sql");
   assert.deepEqual((await request()).data.events, beforeReseed, "Seed migration must preserve participants' edits");
@@ -92,7 +95,7 @@ try {
   // A failed journal write must roll back the public mutation as well.
   const beforeFailure = (await request()).data.events;
   await env.DB.prepare("CREATE TRIGGER reject_history BEFORE INSERT ON event_changes BEGIN SELECT RAISE(ABORT, 'test failure'); END").run();
-  assert.equal((await request("POST", "/api/events", draft)).status, 503);
+  assert.equal((await request("POST", "/api/meetups", draft)).status, 503);
   assert.deepEqual((await request()).data.events, beforeFailure);
   await env.DB.prepare("DROP TRIGGER reject_history").run();
 

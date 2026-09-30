@@ -77,7 +77,7 @@ export default {
     };
     const reply = (status, data) => Response.json(data, { status, headers });
     try {
-      const match = /^\/api\/events(?:\/([a-f0-9-]{36}))?$/.exec(url.pathname);
+      const match = /^\/api\/(?:meetups|events)(?:\/([a-f0-9-]{36}))?$/.exec(url.pathname);
       if (!match) throw new RequestError(404, "Not found.");
       if (!allowed) throw new RequestError(403, "This website is not configured to edit the calendar.");
       const id = match[1], method = request.method;

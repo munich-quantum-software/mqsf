@@ -19,7 +19,7 @@ function element(tag, className, text) {
 async function api(path = "", options = {}) {
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(`${apiBase}/events${path}`, {
+    const response = await fetch(`${apiBase}/meetups${path}`, {
       ...options, credentials: "omit", cache: "no-store", signal: controller.signal,
       headers: options.body ? { "Content-Type": "application/json" } : {},
     });

@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 from server import create_app, validate_event, RequestError
 
 
-def request(app, method="GET", path="/mqsf/api/events", data=None, origin=None, content_type="application/json"):
+def request(app, method="GET", path="/mqsf/api/meetups", data=None, origin=None, content_type="application/json"):
     payload = json.dumps(data).encode() if data is not None else b""
     environ = {"REQUEST_METHOD": method, "PATH_INFO": path, "CONTENT_TYPE": content_type,
                "CONTENT_LENGTH": str(len(payload)), "wsgi.input": BytesIO(payload),
@@ -39,14 +39,17 @@ with TemporaryDirectory() as directory:
     assert first["organizers"] == event["organizers"]
     second_client = create_app(database)
     assert request(second_client)[1]["events"] == [first], "Edits must persist across clients and restarts"
-    assert request(app, "POST", data={**event, "start": "10:30", "end": "11:30"})[0] == 201, "Overlaps are allowed"
-    path = "/mqsf/api/events/" + first["id"]
+    # Already-open clients use the same records through the old route.
+    legacy_path = "/mqsf/api/events/" + first["id"]
+    assert request(app, "GET", "/mqsf/api/events")[1]["events"] == [first]
+    assert request(app, "POST", "/mqsf/api/events", data={**event, "start": "10:30", "end": "11:30"})[0] == 201, "Overlaps are allowed"
+    path = "/mqsf/api/meetups/" + first["id"]
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(lambda title: request(app, "PUT", path, {**first, "title": title})[0], ["Editor one", "Editor two"]))
     assert sorted(results) == [200, 409], "Concurrent edits must not overwrite each other"
     latest = next(e for e in request(app)[1]["events"] if e["id"] == first["id"])
     assert latest["version"] == 2
-    assert request(app, "DELETE", path, {"version": 1})[0] == 409
+    assert request(app, "DELETE", legacy_path, {"version": 1})[0] == 409
     for changes in [{"contact_email": ""}, {"contact_email": None}, {"contact_email": "invalid"}, {"contact_email": "a@example.test\nX"}, {"date": "2026-10-16"}, {"start": "11:00"}, {"end": "09:00"}, {"start": "24:00"},
                     {"title": " "}, {"title": "x" * 121}, {"description": None}, {"audience": 5},
                     {"organizers": " "}, {"organizers": "x" * 201}, {"start": "07:59"}]:
@@ -61,7 +64,7 @@ with TemporaryDirectory() as directory:
     except RequestError as error:
         assert error.status == 400
     assert request(app, "POST", data={**event, "start": "18:00", "end": "21:00"})[0] == 201, "Networking has no published cutoff"
-    status, data, _ = request(app, "PUT", path, {**latest, "organizers": "Taylor"})
+    status, data, _ = request(app, "PUT", legacy_path, {**latest, "organizers": "Taylor"})
     assert status == 200 and data["event"]["organizers"] == "Taylor"
     latest = data["event"]
     with sqlite3.connect(database) as connection:
@@ -86,7 +89,7 @@ with TemporaryDirectory() as directory:
         assert b'url=../#side-events' in request(app, "GET", mount + "/")[1]
         assert request(app, "GET", mount + "/app.mjs")[0] == 200
         assert request(app, "GET", mount + "/conference.json")[0] == 200
-        assert request(app, "GET", mount + "/api/events")[0] == 200
+        assert request(app, "GET", mount + "/api/meetups")[0] == 200
     assert b'href="#side-events"' in request(app, "GET", "/")[1]
     for resource in ["/styles.css", "/script.js", "/assets/images/brand/favicon.png", "/assets/images/brand/mqsf-logo.svg"]:
         assert request(app, "GET", resource)[0] == 200
