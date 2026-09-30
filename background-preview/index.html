@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MQSF · Animated background</title>
+    <style>
+      html, body { margin: 0; background: #17213c; }
+      .artwork { position: fixed; inset: 0; background: url('../assets/images/brand/grey-waves-wallpaper.png') center / cover no-repeat; }
+      canvas { display: block; width: 100%; height: 100%; }
+      canvas[hidden] { display: none; }
+    </style>
+    <script src="../assets/waves.js?v=3" defer></script>
+  </head>
+  <body>
+    <div class="artwork"><canvas class="wave-canvas" aria-hidden="true" hidden></canvas></div>
+  </body>
+</html>

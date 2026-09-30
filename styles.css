@@ -12,10 +12,9 @@
 html { min-width: 320px; background: var(--deep); scroll-behavior: smooth; font-family: "Poppins", ui-sans-serif, system-ui, sans-serif; }
 body, button, input, select, textarea { margin: 0; color: var(--ink); background: var(--deep); font-family: inherit; line-height: 1.5; }
 a { color: inherit; }
-.page-shell { position: relative; min-height: 100svh; overflow: clip; isolation: isolate; background: radial-gradient(ellipse at 58% 48%, rgba(27, 81, 110, .68) 0%, transparent 48%), linear-gradient(135deg, #1b2544 0%, #111d38 52%, #172641 100%); background-attachment: fixed; }
-.page-shell::after { position: fixed; inset: 0; z-index: 0; content: ""; pointer-events: none; background: linear-gradient(180deg, rgba(8, 15, 34, .08), rgba(8, 15, 34, .46)), radial-gradient(ellipse at center, transparent 28%, rgba(5, 10, 26, .44) 100%); }
+.page-shell { position: relative; min-height: 100svh; overflow: clip; isolation: isolate; }
 .container { width: min(calc(100% - 5rem), var(--max-width)); margin-inline: auto; }
-.wave-canvas { position: fixed; inset: 0; z-index: 0; display: block; width: 100%; height: 100svh; pointer-events: none; }
+.wave-background { position: fixed; z-index: 0; height: 100svh; }
 .masthead { position: fixed; inset: 0 0 auto; z-index: 10; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: none; min-height: 96px; padding-inline: max(2.5rem, calc((100vw - var(--max-width)) / 2)); border-bottom: 1px solid rgba(4, 10, 20, .12); background: rgba(255, 255, 255, .78); box-shadow: 0 14px 30px rgba(2, 7, 14, .12); backdrop-filter: blur(16px); }
 .wordmark { display: inline-flex; align-items: center; width: 154px; text-decoration: none; }
 .wordmark img { display: block; width: 100%; height: auto; }
