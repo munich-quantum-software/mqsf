@@ -168,7 +168,7 @@ function openEditor(event = null, date = selectedDay, range = {}) {
   for (const key of fields) form.elements.namedItem(key).value = (event || defaults)[key] || "";
   $("event-contact-email").value = "";
   $("event-table").value = event?.table_number || "";
-  $("contact-edit-hint").hidden = !event;
+  $("contact-hint").textContent = event ? "Enter the email used to create this event." : "For questions about your event or table reservation.";
   updateOrganizerControls();
   $("editor-title").textContent = event ? "Edit event" : "Add an event";
   $("save-event").textContent = event ? "Save changes" : "Add event";
@@ -342,7 +342,6 @@ function updateOrganizerControls() {
   $("event-contact-email").required = !organizerKey || !editing;
   $("table-fields").hidden = !organizerKey;
   $("participant-note").hidden = Boolean(organizerKey);
-  $("organizer-note").hidden = !organizerKey;
 }
 
 function openOrganizerLogin() {

@@ -11,9 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css?v=3">
-    <link rel="stylesheet" href="./side-events/styles.css?v=6">
+    <link rel="stylesheet" href="./side-events/styles.css?v=7">
     <script src="./side-events/config.js" defer></script>
-    <script type="module" src="./side-events/app.mjs?v=9"></script>
+    <script type="module" src="./side-events/app.mjs?v=10"></script>
     <script src="./assets/waves.js" defer></script>
     <script src="./script.js?v=3" defer></script>
   </head>
@@ -192,18 +192,15 @@
         <form id="event-form">
           <div class="dialog-top"><p class="dialog-eyebrow">MQSF 2026 · Side events</p><button type="button" class="icon-button" id="close-editor" aria-label="Close event editor">×</button></div>
           <h2 id="editor-title">Add an event</h2>
-          <p class="editor-intro">A meetup, a hacking session, or something else worth bringing people together for.</p>
           <fieldset id="event-fields">
             <label for="event-title">Title</label>
             <input id="event-title" name="title" maxlength="120" placeholder="e.g. MQT developers meeting" required>
             <label for="event-organizers">Organizer name(s)</label>
-            <input id="event-organizers" name="organizers" maxlength="200" placeholder="Who is organizing this event?" aria-describedby="organizers-hint" required>
-            <p class="field-hint" id="organizers-hint">Shown publicly with the event.</p>
+            <input id="event-organizers" name="organizers" maxlength="200" placeholder="Who is organizing this event?" required>
             <div id="contact-fields">
-              <label for="event-contact-email">Contact email (private)</label>
-              <input type="email" id="event-contact-email" name="contact_email" maxlength="254" autocomplete="off" aria-describedby="contact-hint contact-edit-hint" required>
-              <p class="field-hint" id="contact-hint">Your email address is stored privately so the MQSF organizers can contact you about your event or table reservation. It is never displayed in the calendar. Prefer not to submit it here? Email <a href="mailto:robert@mq.sc">robert@mq.sc</a> instead.</p>
-              <p class="field-hint" id="contact-edit-hint" hidden>Enter the contact email used to create this event to save changes or delete it. For privacy, the saved address is never shown here. If you need help, contact the MQSF organizers.</p>
+              <label for="event-contact-email">Contact email</label>
+              <input type="email" id="event-contact-email" name="contact_email" maxlength="254" autocomplete="off" aria-describedby="contact-hint" required>
+              <p class="field-hint" id="contact-hint">For questions about your event or table reservation.</p>
             </div>
             <div id="table-fields" hidden>
               <label for="event-table">Table assignment</label>
@@ -227,8 +224,7 @@
           <button type="button" class="text-button" id="organizer-reauth" hidden>Organizer sign-in</button>
           <div id="discard-confirm" class="confirmation" hidden><p>Discard your unsaved changes?</p><button type="button" class="button button-secondary" id="keep-editing">Keep editing</button><button type="button" class="button button-danger" id="discard-draft">Discard changes</button></div>
           <div id="delete-confirm" class="confirmation" hidden><p>Remove this event from the public timetable? The MQSF organizers keep a private history for recovery.</p><button type="button" class="button button-secondary" id="keep-event">Keep event</button><button type="button" class="button button-danger" id="confirm-delete">Delete event</button></div>
-          <p class="shared-note" id="participant-note">Event details are public. Editing or deleting requires the original contact email, which stays private. The MQSF organizers receive notifications and keep a private history of changes and deletions for moderation and recovery.</p>
-          <p class="shared-note" id="organizer-note" hidden>You are signed in as an MQSF organizer. Contact emails remain private and unchanged when editing. Changes and deletions are recorded for moderation and recovery.</p>
+          <p class="shared-note" id="participant-note">Your event will appear in the public timetable.</p>
           <div class="editor-actions"><button type="button" class="text-button delete-button" id="delete-event" hidden>Delete event</button><div class="dialog-actions"><button type="button" class="button button-secondary" id="cancel-editor">Cancel</button><button type="submit" class="button button-primary" id="save-event">Add event</button></div></div>
         </form>
       </dialog>
