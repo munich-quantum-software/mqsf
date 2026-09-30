@@ -6,4 +6,5 @@ node_modules/
 .wrangler/
 .dev.vars*
 .env*
-/event-preview/
+/event-preview/assets/favicon-f13f86af.ico
+/event-preview/assets/grey-waves-wallpaper.png
