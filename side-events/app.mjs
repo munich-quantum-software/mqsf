@@ -63,7 +63,7 @@ function renderCalendar() {
     container.dataset.from = from;
     container.dataset.to = to;
     container.replaceChildren();
-    $(`count-${day.date}`).textContent = `${dayEvents.length} ${dayEvents.length === 1 ? "event" : "events"}`;
+    $(`count-${day.date}`).textContent = `${dayEvents.length} ${dayEvents.length === 1 ? "meet-up" : "meet-ups"}`;
     for (const [start, end] of [[from, day.start ? minutes(day.start) : from], [day.end ? minutes(day.end) : to, to]]) {
       if (start >= end) continue;
       const shade = element("div", "unavailable");
@@ -81,7 +81,7 @@ function renderCalendar() {
       button.style.setProperty("--column", event.column);
       button.style.setProperty("--columns", event.columns);
       const table = event.table_number ? `Table ${event.table_number}` : "Table not assigned";
-      button.setAttribute("aria-label", `${event.start} to ${event.end}: ${event.title}. ${table}. View or edit event.`);
+      button.setAttribute("aria-label", `${event.start} to ${event.end}: ${event.title}. ${table}. View or edit meet-up.`);
       button.title = `${event.start}–${event.end} · ${event.title} · ${table}`;
       button.append(element("span", "event-time", `${event.start}–${event.end}`), element("span", "event-title", event.title));
       if (duration >= 70) button.append(element("span", "event-audience", event.audience));
@@ -90,13 +90,13 @@ function renderCalendar() {
     }
     if (!dayEvents.length && loaded) {
       const empty = element("div", "empty-day");
-      const add = element("button", "button button-secondary", "+ Add the first event");
+      const add = element("button", "button button-secondary", "+ Add the first meet-up");
       add.addEventListener("click", () => openEditor(null, day.date));
       empty.append(element("p", "", "Room for your next idea."), add);
       container.append(empty);
     }
   }
-  $("event-count").textContent = loaded ? `${events.length} ${events.length === 1 ? "event" : "events"}` : "";
+  $("event-count").textContent = loaded ? `${events.length} ${events.length === 1 ? "meet-up" : "meet-ups"}` : "";
   $("calendar-grid").setAttribute("aria-busy", "false");
   chooseDay(selectedDay);
   if (focusedEvent) document.querySelector(`[data-event-id="${focusedEvent}"]`)?.focus({ preventScroll: true });
@@ -119,7 +119,7 @@ async function refresh() {
     return true;
   } catch (error) {
     if (serial !== readSerial) return false;
-    $("connection-message").textContent = loaded ? "Updates are temporarily unavailable. Showing the last loaded events." : error.message;
+    $("connection-message").textContent = loaded ? "Updates are temporarily unavailable. Showing the last loaded meet-ups." : error.message;
     $("connection-error").hidden = false;
     $("sync-status").textContent = "Connection unavailable";
     $("calendar-grid").setAttribute("aria-busy", "false");
@@ -132,7 +132,7 @@ function dateLabel(date) {
 }
 
 function showDetails(event) {
-  if (!event) { details.close(); toast("This event has been removed."); return; }
+  if (!event) { details.close(); toast("This meet-up has been removed."); return; }
   $("details-title").textContent = event.title;
   $("details-time").textContent = `${dateLabel(event.date)} · ${event.start}–${event.end} CEST`;
   $("details-organizers").textContent = event.organizers || "Not specified yet";
@@ -168,10 +168,10 @@ function openEditor(event = null, date = selectedDay, range = {}) {
   $("event-contact-email").value = "";
   $("event-table").value = event?.table_number || "";
   $("event-table").options[0].textContent = event ? "Not assigned" : "Automatic";
-  $("contact-hint").textContent = event ? "Enter the email used to create this event." : "For questions about your event or table reservation.";
+  $("contact-hint").textContent = event ? "Enter the email used to create this meet-up." : "For questions about your meet-up or table reservation.";
   updateOrganizerControls();
-  $("editor-title").textContent = event ? "Edit event" : "Add an event";
-  $("save-event").textContent = event ? "Save changes" : "Add event";
+  $("editor-title").textContent = event ? "Edit meet-up" : "Add meet-up";
+  $("save-event").textContent = event ? "Save changes" : "Add meet-up";
   $("delete-event").hidden = !event;
   updateTimeHints();
   initialDraft = JSON.stringify(draft());
@@ -193,8 +193,8 @@ function updateTimeHints() {
   const peak = maxParallelSessions(events, { ...data, id: editing?.id });
   $("overlap-note").hidden = !data.start || !data.end || data.end <= data.start;
   $("overlap-note").textContent = peak > 3
-    ? "This time would exceed the limit of 3 simultaneous sessions. Choose another time."
-    : `Up to ${peak} ${peak === 1 ? "session" : "sessions"} would run at once, including yours. Maximum: 3.`;
+    ? "This time would exceed the limit of 3 simultaneous meet-ups. Choose another time."
+    : `Up to ${peak} ${peak === 1 ? "meet-up" : "meet-ups"} would run at once, including yours. Maximum: 3.`;
 }
 
 function requestClose() {
@@ -207,7 +207,7 @@ function setSaving(value) {
   saving = value;
   $("event-fields").disabled = value;
   editor.querySelectorAll("button").forEach(button => button.disabled = value);
-  $("save-event").textContent = value ? "Saving…" : editing ? "Save changes" : "Add event";
+  $("save-event").textContent = value ? "Saving…" : editing ? "Save changes" : "Add meet-up";
 }
 
 function showError(error) {
@@ -291,7 +291,7 @@ form.addEventListener("submit", async event => {
     events = [...events.filter(e => e.id !== data.event.id), data.event];
     loaded = true; signature = "";
     editor.close(); renderCalendar(); chooseDay(data.event.date);
-    toast(wasEditing ? "Changes saved to the calendar." : "Event added to the calendar.");
+    toast(wasEditing ? "Changes saved to the calendar." : "Meet-up added to the calendar.");
     refresh();
   } catch (error) { showError(error); }
   finally { setSaving(false); }
@@ -304,7 +304,7 @@ $("confirm-delete").addEventListener("click", async () => {
     await api(`/meetups/${editing.id}`, { method: "DELETE", body: JSON.stringify({ version: editing.version, contact_email: $("event-contact-email").value }) });
     ++readSerial;
     events = events.filter(e => e.id !== editing.id); signature = "";
-    editor.close(); renderCalendar(); toast("Event deleted from the calendar."); refresh();
+    editor.close(); renderCalendar(); toast("Meet-up deleted from the calendar."); refresh();
   } catch (error) { $("delete-confirm").hidden = true; showError(error); }
   finally { setSaving(false); }
 });
@@ -331,7 +331,7 @@ $("load-latest").addEventListener("click", async () => {
   if (!await refresh()) return;
   const latest = events.find(e => e.id === editing?.id);
   if (latest) openEditor(latest);
-  else showError(new Error("This event has been removed. Your unsaved draft is still shown."));
+  else showError(new Error("This meet-up has been removed. Your unsaved draft is still shown."));
 });
 for (const id of ["event-date", "event-start", "event-end"]) $(id).addEventListener("input", updateTimeHints);
 document.querySelectorAll(".mobile-days button").forEach(button => button.addEventListener("click", () => chooseDay(button.dataset.day)));
@@ -378,7 +378,7 @@ $("organizer-form").addEventListener("submit", async event => {
     $("organizer-reauth").hidden = true;
     $("form-error").hidden = true;
     organizerDialog.close();
-    toast("Organizer mode enabled. Select an event to edit it or assign a table.");
+    toast("Organizer mode enabled. Select a meet-up to edit it or assign a table.");
   } catch (error) {
     $("organizer-error").textContent = error.message;
     $("organizer-error").hidden = false;
@@ -409,7 +409,7 @@ async function initialize() {
     const response = await fetch(new URL("./conference.json", import.meta.url), { cache: "no-store" });
     if (!response.ok) throw new Error("Could not load the conference dates. Please try again.");
     config = await response.json();
-    $("hours-note").textContent = config.hoursNote || "Side events run alongside the main program.";
+    $("hours-note").textContent = config.hoursNote || "Meet-ups run alongside the main program.";
     $("add-event").disabled = false;
     renderCalendar(); await refresh();
   } catch (error) {

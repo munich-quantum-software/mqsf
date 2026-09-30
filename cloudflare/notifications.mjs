@@ -31,7 +31,7 @@ export function discordMessages(change) {
         else fields.push(...textFields(`${label} · Before`, before[key]), ...textFields(`${label} · After`, after[key]));
       }
     }
-    if (fields.length === 2) fields.push({ name: "No content changes", value: "The event was saved without changing its details." });
+    if (fields.length === 2) fields.push({ name: "No content changes", value: "The meet-up was saved without changing its details." });
   }
   if (event.table_number != null && (!before || !after || before.table_number === after.table_number)) {
     fields.push({ name: "Table", value: String(event.table_number), inline: true });

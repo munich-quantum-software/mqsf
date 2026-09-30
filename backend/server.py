@@ -34,7 +34,7 @@ def minutes(value):
 
 def validate_event(data, config):
     if not isinstance(data, dict):
-        raise RequestError(400, "Send an event as a JSON object.")
+        raise RequestError(400, "Send a meet-up as a JSON object.")
     event = {}
     for key, limit in {"date": 10, "start": 5, "end": 5, "title": 120,
                        "description": 3000, "audience": 300, "organizers": 200}.items():
@@ -59,10 +59,10 @@ def read_json(environ):
     try:
         length = int(environ.get("CONTENT_LENGTH", "0"))
         if not 0 < length <= 20000:
-            raise RequestError(413, "The event is too large or empty.")
+            raise RequestError(413, "The meet-up is too large or empty.")
         value = json.loads(environ["wsgi.input"].read(length))
     except (ValueError, UnicodeError):
-        raise RequestError(400, "The event could not be read. Send valid JSON.") from None
+        raise RequestError(400, "The meet-up could not be read. Send valid JSON.") from None
     if not isinstance(value, dict):
         raise RequestError(400, "Send a JSON object.")
     return value
@@ -211,7 +211,7 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                 data = read_json(environ)
                 if event_id:
                     if type(data.get("version")) is not int or data["version"] < 1:
-                        raise RequestError(400, "The event version is missing. Reload the event and try again.")
+                        raise RequestError(400, "The meet-up version is missing. Reload the meet-up and try again.")
                 email = "" if organizer and event_id else contact_email(data)
                 assign_table = organizer and "table_number" in data
                 table = data["table_number"] if assign_table else None
@@ -233,7 +233,7 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                             SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, number FROM assignment WHERE number IS NOT NULL RETURNING id""",
                             (table, event["date"], event["end"], event["start"], event_id, *values, email, now)).fetchone()
                         if not saved:
-                            raise RequestError(422, "No table is free for this entire time slot. At most 3 sessions can run at the same time. Choose another time or contact the MQSF organizers.")
+                            raise RequestError(422, "No table is free for this entire time slot. At most 3 meet-ups can run at the same time. Choose another time or contact the MQSF organizers.")
                     else:
                         result = connection.execute("""UPDATE events SET date=?, start=?, end=?, title=?, description=?, audience=?, organizers=?,
                             table_number=CASE WHEN ? THEN ? ELSE table_number END, updated_at=?, version=version+1
@@ -241,10 +241,10 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                 if method != "POST" and not result.rowcount:
                     existing = connection.execute("SELECT contact_email=? COLLATE NOCASE AS verified FROM events WHERE id=?", (email, event_id)).fetchone()
                     if not existing:
-                        raise RequestError(404, "This event was removed. Your changes have not been saved.")
+                        raise RequestError(404, "This meet-up was removed. Your changes have not been saved.")
                     if not organizer and not existing["verified"]:
-                        raise RequestError(403, "The contact email does not match this event. Enter the address used to create it, or contact the MQSF organizers.")
-                    raise RequestError(409, "Someone changed this event. Load the latest version before saving or deleting it.")
+                        raise RequestError(403, "The contact email does not match this meet-up. Enter the address used to create it, or contact the MQSF organizers.")
+                    raise RequestError(409, "Someone changed this meet-up. Load the latest version before saving or deleting it.")
                 if method == "DELETE":
                     connection.commit()
                     return reply(200, {"deleted": event_id})
@@ -255,10 +255,10 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
             return reply(error.status, {"error": error.message})
         except sqlite3.Error as error:
             if "MQSF_MAX_PARALLEL_SESSIONS" in str(error):
-                return reply(422, {"error": "At most 3 sessions can run at the same time. Choose another time. Your changes have not been saved."})
+                return reply(422, {"error": "At most 3 meet-ups can run at the same time. Choose another time. Your changes have not been saved."})
             if "MQSF_TABLE_OCCUPIED" in str(error):
                 return reply(422, {"error": "The assigned table is already occupied at that time. Choose another time or ask the MQSF organizers to change the table assignment. Your changes have not been saved."})
-            return reply(503, {"error": "The calendar could not save or load events. Please try again. Your draft is still here."})
+            return reply(503, {"error": "The calendar could not save or load meet-ups. Please try again. Your draft is still here."})
 
     return application
 

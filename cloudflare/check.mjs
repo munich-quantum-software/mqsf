@@ -125,7 +125,7 @@ try {
   assert.deepEqual(race.map(result => result.status).sort(), [201, 422], "Only one concurrent save can take the last place");
   const third = race.find(result => result.status === 201).data.event;
   assert.deepEqual((await request()).data.events.filter(e => e.date === slot.date && e.start === slot.start).map(e => e.table_number).sort(), [1, 2, 3], "Concurrent creates receive different tables");
-  assert.match(race.find(result => result.status === 422).data.error, /At most 3 sessions/);
+  assert.match(race.find(result => result.status === 422).data.error, /At most 3 meet-ups/);
   assert.equal((await request("PUT", `/api/meetups/${third.id}`, { ...third, title: "Edited at capacity", contact_email })).status, 200, "An edit must not count itself twice");
   const beforeCapacityFailure = (await request()).data;
   const historyCount = () => env.DB.prepare("SELECT COUNT(*) AS n FROM event_changes").first();

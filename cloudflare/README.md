@@ -119,7 +119,7 @@ Set a randomly generated, 32–256 character ASCII key without spaces as the Clo
 under **mqsf-2026-calendar → Settings → Variables and Secrets**, then deploy it. Share the key privately with the organizers.
 Keep it out of Git, URLs, command arguments, and chat. Store it in a password manager.
 
-After signing in, select any event and choose **Edit event**. Organizers can edit or delete without the participant's contact email,
+After signing in, select any event and choose **Edit meet-up**. Organizers can edit or delete without the participant's contact email,
 and choose **Not assigned**, **Table 1**, **Table 2**, or **Table 3**. New events default to **Automatic** table assignment.
 Saved contact addresses remain unchanged and hidden.
 New events still require a contact address. All changes use the same revision, overlap, history, and notification checks.

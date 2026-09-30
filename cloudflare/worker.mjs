@@ -62,13 +62,13 @@ async function readData(request) {
   }
   const reader = request.body?.getReader(), chunks = [];
   let size = 0;
-  if (!reader) throw new RequestError(400, "Send an event as a JSON object.");
+  if (!reader) throw new RequestError(400, "Send a meet-up as a JSON object.");
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > 20000) { await reader.cancel(); throw new RequestError(413, "The event is too large."); }
+      if (size > 20000) { await reader.cancel(); throw new RequestError(413, "The meet-up is too large."); }
       chunks.push(value);
     }
   } finally { reader.releaseLock(); }
@@ -76,7 +76,7 @@ async function readData(request) {
     const data = JSON.parse(await new Blob(chunks).text());
     if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error();
     return data;
-  } catch { throw new RequestError(400, "Send an event as a valid JSON object."); }
+  } catch { throw new RequestError(400, "Send a meet-up as a valid JSON object."); }
 }
 
 export default {
@@ -116,7 +116,7 @@ export default {
       const organizer = organizerAccess(request, env);
       const data = await readData(request);
       if (id && (!Number.isSafeInteger(data.version) || data.version < 1)) {
-        throw new RequestError(400, "The event version is missing. Reload the event and try again.");
+        throw new RequestError(400, "The meet-up version is missing. Reload the meet-up and try again.");
       }
       const email = organizer && id ? "" : contactEmail(data);
       const assignTable = organizer && Object.hasOwn(data, "table_number");
@@ -138,7 +138,7 @@ export default {
             (date, start, end, title, description, audience, organizers, contact_email, updated_at, id, table_number)
             SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, number FROM assignment WHERE number IS NOT NULL
             RETURNING ${publicColumns}`).bind(table, event.date, event.end, event.start, ...values, email, updated, crypto.randomUUID()).first();
-          if (!saved) throw new RequestError(422, "No table is free for this entire time slot. At most 3 sessions can run at the same time. Choose another time or contact the MQSF organizers.");
+          if (!saved) throw new RequestError(422, "No table is free for this entire time slot. At most 3 meet-ups can run at the same time. Choose another time or contact the MQSF organizers.");
         } else {
           saved = await env.DB.prepare(`UPDATE events SET date=?, start=?, end=?, title=?, description=?, audience=?, organizers=?,
             table_number=CASE WHEN ? THEN ? ELSE table_number END, updated_at=?, version=version+1
@@ -148,21 +148,21 @@ export default {
       }
       if (!saved) {
         const exists = await env.DB.prepare("SELECT contact_email=? COLLATE NOCASE AS verified FROM events WHERE id=?").bind(email, id).first();
-        if (!exists) throw new RequestError(404, "This event was removed. Your changes have not been saved.");
-        if (!organizer && !exists.verified) throw new RequestError(403, "The contact email does not match this event. Enter the address used to create it, or contact the MQSF organizers.");
-        throw new RequestError(409, "Someone changed this event. Load the latest version before saving or deleting it.");
+        if (!exists) throw new RequestError(404, "This meet-up was removed. Your changes have not been saved.");
+        if (!organizer && !exists.verified) throw new RequestError(403, "The contact email does not match this meet-up. Enter the address used to create it, or contact the MQSF organizers.");
+        throw new RequestError(409, "Someone changed this meet-up. Load the latest version before saving or deleting it.");
       }
       ctx?.waitUntil(notifyChanges(env));
       return reply(method === "POST" ? 201 : 200, method === "DELETE" ? { deleted: id } : { event: saved });
     } catch (error) {
       if (error instanceof RequestError) return reply(error.status, { error: error.message });
       if (error.message?.includes("MQSF_MAX_PARALLEL_SESSIONS")) {
-        return reply(422, { error: "At most 3 sessions can run at the same time. Choose another time. Your changes have not been saved." });
+        return reply(422, { error: "At most 3 meet-ups can run at the same time. Choose another time. Your changes have not been saved." });
       }
       if (error.message?.includes("MQSF_TABLE_OCCUPIED")) {
         return reply(422, { error: "The assigned table is already occupied at that time. Choose another time or ask the MQSF organizers to change the table assignment. Your changes have not been saved." });
       }
-      return reply(503, { error: "The calendar could not save or load events. Please try again. Your draft is still here." });
+      return reply(503, { error: "The calendar could not save or load meet-ups. Please try again. Your draft is still here." });
     }
   },
 };
