@@ -51,7 +51,7 @@ function contactEmail(data) {
   }
   const email = value.trim();
   if (!/^[^\s<>@,;]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$/.test(email)) {
-    throw new RequestError(400, "Enter a private contact email address, or contact robert@mq.sc to arrange your event directly.");
+    throw new RequestError(400, "Enter a valid private contact email address.");
   }
   return email;
 }

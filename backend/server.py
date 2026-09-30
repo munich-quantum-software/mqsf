@@ -74,7 +74,7 @@ def contact_email(data):
         raise RequestError(400, "Enter a valid private contact email address.")
     email = value.strip()
     if not re.fullmatch(r"[^\s<>@,;]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}", email):
-        raise RequestError(400, "Enter a private contact email address, or contact robert@mq.sc to arrange your event directly.")
+        raise RequestError(400, "Enter a valid private contact email address.")
     return email
 
 

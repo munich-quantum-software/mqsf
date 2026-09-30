@@ -70,7 +70,7 @@ New events require a contact email. Updates and deletions require entering the s
 The API checks the email and revision in the database mutation itself. It trims surrounding spaces and ignores ASCII letter case; public edits cannot replace the address.
 The address stays hidden in public responses, forms, and error messages. This checks knowledge of the address, not ownership of the mailbox.
 Legacy or example events without a saved address cannot be edited or deleted with email verification; signed-in organizers can manage them.
-The form explains the purpose; the community-area introduction offers direct contact via robert@mq.sc as an alternative.
+The form explains the purpose; the community-area introduction directs questions and problems to simon@mq.sc.
 
 1. Create a private **text channel on a Discord server** accessible only to Simon, Robert, and trusted server administrators.
    Group DMs do not support incoming webhooks. Set the channel's notification preference to **All Messages** for both organizers.
