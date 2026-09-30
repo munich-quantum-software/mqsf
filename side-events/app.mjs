@@ -3,11 +3,14 @@ import { minutes, clock, layoutEvents, selectionRange, maxParallelSessions } fro
 const $ = id => document.getElementById(id);
 const fields = ["title", "organizers", "contact_email", "date", "start", "end", "description", "audience"];
 const form = $("event-form"), editor = $("editor-dialog"), details = $("details-dialog");
+const organizerDialog = $("organizer-dialog");
 const apiBase = (window.MQSF_API_BASE || new URL("./api", import.meta.url).href).replace(/\/$/, "");
 const scale = 1.3;
 let config, events = [], loaded = false, saving = false, editing = null, viewingId = null;
 let selectedDay = "2026-10-14", initialDraft = "", readSerial = 0, signature = "", toastTimer;
 let selection = null;
+// Kept only in this tab's memory, never in browser storage or a URL.
+let organizerKey = "", signingIn = false;
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -16,12 +19,12 @@ function element(tag, className, text) {
   return node;
 }
 
-async function api(path = "", options = {}) {
+async function api(path = "/meetups", options = {}, key = options.method ? organizerKey : "") {
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(`${apiBase}/meetups${path}`, {
-      ...options, credentials: "omit", cache: "no-store", signal: controller.signal,
-      headers: options.body ? { "Content-Type": "application/json" } : {},
+    const response = await fetch(`${apiBase}${path}`, {
+      ...options, credentials: "omit", cache: "no-store", redirect: "error", signal: controller.signal,
+      headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(key ? { Authorization: `Bearer ${key}` } : {}) },
     });
     const data = await response.json();
     if (!response.ok) {
@@ -148,20 +151,25 @@ function openDetails(id) {
   showDetails(event); details.showModal();
 }
 
-function draft() { return Object.fromEntries(fields.map(key => [key, form.elements.namedItem(key).value])); }
+function draft() {
+  return { ...Object.fromEntries(fields.map(key => [key, form.elements.namedItem(key).value])),
+    ...(organizerKey ? { table_number: Number($("event-table").value) || null } : {}) };
+}
 function dirty() { return JSON.stringify(draft()) !== initialDraft; }
 
 function openEditor(event = null, date = selectedDay, range = {}) {
   details.close();
   editing = event ? { ...event } : null;
   form.reset();
-  ["form-error", "load-latest", "discard-confirm", "delete-confirm"].forEach(id => $(id).hidden = true);
+  ["form-error", "load-latest", "organizer-reauth", "discard-confirm", "delete-confirm"].forEach(id => $(id).hidden = true);
   const day = config.days.find(d => d.date === (event?.date || date));
   const start = day.start || "10:00";
   const defaults = { date, start, end: clock(Math.min(minutes(start) + 60, day.end ? minutes(day.end) : 1439)), title: "", organizers: "", description: "", audience: "", ...range };
   for (const key of fields) form.elements.namedItem(key).value = (event || defaults)[key] || "";
   $("event-contact-email").value = "";
+  $("event-table").value = event?.table_number || "";
   $("contact-edit-hint").hidden = !event;
+  updateOrganizerControls();
   $("editor-title").textContent = event ? "Edit event" : "Add an event";
   $("save-event").textContent = event ? "Save changes" : "Add event";
   $("delete-event").hidden = !event;
@@ -201,6 +209,7 @@ function showError(error) {
   $("form-error").textContent = error.message;
   $("form-error").hidden = false;
   $("load-latest").hidden = error.status !== 409;
+  $("organizer-reauth").hidden = error.status !== 401;
   $("form-error").scrollIntoView({ block: "nearest" });
 }
 
@@ -270,7 +279,7 @@ form.addEventListener("submit", async event => {
   $("form-error").hidden = true; setSaving(true);
   const wasEditing = Boolean(editing);
   try {
-    const data = await api(editing ? `/${editing.id}` : "", {
+    const data = await api(editing ? `/meetups/${editing.id}` : "/meetups", {
       method: editing ? "PUT" : "POST", body: JSON.stringify({ ...draft(), ...(editing ? { version: editing.version } : {}) }),
     });
     ++readSerial;
@@ -284,10 +293,10 @@ form.addEventListener("submit", async event => {
 });
 
 $("confirm-delete").addEventListener("click", async () => {
-  if (!editing || saving || !$("event-contact-email").reportValidity()) return;
+  if (!editing || saving || (!organizerKey && !$("event-contact-email").reportValidity())) return;
   setSaving(true);
   try {
-    await api(`/${editing.id}`, { method: "DELETE", body: JSON.stringify({ version: editing.version, contact_email: $("event-contact-email").value }) });
+    await api(`/meetups/${editing.id}`, { method: "DELETE", body: JSON.stringify({ version: editing.version, contact_email: $("event-contact-email").value }) });
     ++readSerial;
     events = events.filter(e => e.id !== editing.id); signature = "";
     editor.close(); renderCalendar(); toast("Event deleted from the calendar."); refresh();
@@ -309,7 +318,7 @@ editor.addEventListener("cancel", event => { event.preventDefault(); requestClos
 $("keep-editing").addEventListener("click", () => { $("discard-confirm").hidden = true; $("event-title").focus(); });
 $("discard-draft").addEventListener("click", () => editor.close());
 $("delete-event").addEventListener("click", () => {
-  if (!$("event-contact-email").reportValidity()) return;
+  if (!organizerKey && !$("event-contact-email").reportValidity()) return;
   $("delete-confirm").hidden = false; $("keep-event").focus();
 });
 $("keep-event").addEventListener("click", () => { $("delete-confirm").hidden = true; $("delete-event").focus(); });
@@ -326,6 +335,70 @@ window.addEventListener("beforeunload", event => { if (editor.open && dirty()) {
 function refreshIfVisible() { if (!document.hidden && config) refresh(); }
 document.addEventListener("visibilitychange", refreshIfVisible);
 setInterval(refreshIfVisible, 15000);
+
+function updateOrganizerControls() {
+  $("organizer-toolbar").hidden = !organizerKey;
+  $("contact-fields").hidden = Boolean(organizerKey && editing);
+  $("event-contact-email").required = !organizerKey || !editing;
+  $("table-fields").hidden = !organizerKey;
+  $("participant-note").hidden = Boolean(organizerKey);
+  $("organizer-note").hidden = !organizerKey;
+}
+
+function openOrganizerLogin() {
+  $("organizer-form").reset();
+  $("organizer-error").hidden = true;
+  if (!organizerDialog.open) organizerDialog.showModal();
+  $("organizer-key").focus();
+}
+
+function organizerLink() {
+  if (location.hash !== "#organizer") return;
+  history.replaceState(null, "", "#side-events");
+  $("side-events").scrollIntoView();
+  if (!organizerKey) openOrganizerLogin();
+}
+
+$("organizer-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (signingIn || !event.currentTarget.reportValidity()) return;
+  const key = $("organizer-key").value.trim();
+  $("organizer-key").value = "";
+  signingIn = true;
+  organizerDialog.querySelectorAll("button, input").forEach(node => node.disabled = true);
+  $("organizer-error").hidden = true;
+  try {
+    await api("/organizer", { method: "POST" }, key);
+    organizerKey = key;
+    updateOrganizerControls();
+    $("organizer-reauth").hidden = true;
+    $("form-error").hidden = true;
+    organizerDialog.close();
+    toast("Organizer mode enabled. Select an event to edit it or assign a table.");
+  } catch (error) {
+    $("organizer-error").textContent = error.message;
+    $("organizer-error").hidden = false;
+  } finally {
+    signingIn = false;
+    organizerDialog.querySelectorAll("button, input").forEach(node => node.disabled = false);
+    if (organizerDialog.open) $("organizer-key").focus();
+  }
+});
+$("close-organizer").addEventListener("click", () => organizerDialog.close());
+organizerDialog.addEventListener("cancel", event => { if (signingIn) event.preventDefault(); });
+organizerDialog.addEventListener("close", () => {
+  $("organizer-key").value = "";
+  (editor.open ? $("event-title") : $("calendar")).focus({ preventScroll: true });
+});
+$("organizer-signout").addEventListener("click", () => {
+  organizerKey = "";
+  updateOrganizerControls();
+  $("add-event").focus({ preventScroll: true });
+  toast("Signed out of organizer mode.");
+});
+$("organizer-reauth").addEventListener("click", openOrganizerLogin);
+window.addEventListener("hashchange", organizerLink);
+organizerLink();
 
 async function initialize() {
   try {

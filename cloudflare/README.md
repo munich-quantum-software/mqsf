@@ -9,7 +9,7 @@ There are no participant accounts. Anyone can add an event; editing or deleting 
 At most three sessions may run simultaneously. Database triggers enforce this for additions, edits, and restores,
 including concurrent requests. An event ending exactly when another begins does not overlap it.
 Organizer names are public. Contact emails are private: only the organizers can read them in D1 and their private Discord channel.
-The public API explicitly selects public fields, including in save responses. There are no public history or moderation endpoints.
+The API explicitly selects public fields, including in organizer save responses. There is no public history or contact endpoint.
 No cookies, analytics, or application visitor logs are collected.
 The hosting providers may keep their own infrastructure logs.
 
@@ -70,7 +70,7 @@ Keep exports outside Git. Cloudflare also provides D1 Time Travel recovery.
 New events require a contact email. Updates and deletions require entering the same address, including through the legacy `/api/events` route.
 The API checks the email and revision in the database mutation itself. It trims surrounding spaces and ignores ASCII letter case; public edits cannot replace the address.
 The address stays hidden in public responses, forms, and error messages. This checks knowledge of the address, not ownership of the mailbox.
-Legacy or example events without a saved address cannot be edited or deleted publicly; organizers can manage them directly through Cloudflare.
+Legacy or example events without a saved address cannot be edited or deleted with email verification; signed-in organizers can manage them.
 The form explains the purpose and offers direct contact via robert@mq.sc as an alternative.
 
 1. Create a private **text channel on a Discord server** accessible only to Simon, Robert, and trusted server administrators.
@@ -111,9 +111,27 @@ otherwise use `current_version` from `list`. A stale version or missing snapshot
 Restoration generates a new revision and history entry, so stale browser drafts cannot overwrite it, and the restore is also notified.
 `show` contains private addresses. Do not paste its output, private Discord messages, or database exports into public issues.
 
+## Organizer sign-in
+
+Open <https://munich-quantum-software.github.io/mqsf-2026-program/#organizer>.
+The sign-in is not linked from the public page or navigation. The link alone grants no access.
+
+Set a randomly generated, 32–256 character ASCII key without spaces as the Cloudflare **Secret** `ORGANIZER_ACCESS_KEY`
+under **mqsf-2026-calendar → Settings → Variables and Secrets**, then deploy it. Share the key privately with the organizers.
+Keep it out of Git, URLs, command arguments, and chat. Store it in a password manager.
+
+After signing in, select any event and choose **Edit event**. Organizers can edit or delete without the participant's contact email,
+and choose **Not assigned**, **Table 1**, **Table 2**, or **Table 3**. Saved contact addresses remain unchanged and hidden.
+New events still require a contact address. All changes use the same revision, overlap, history, and notification checks.
+
+The key is sent only in an Authorization header over HTTPS. The API checks it with a constant-time comparison on every organizer request.
+The website keeps it only in the current tab's memory; sign out or reload to clear it. There are no cookies or browser-storage sessions.
+Rotating the Cloudflare secret invalidates the old key immediately. Missing or invalid configuration disables organizer access.
+The Worker uses Cloudflare's [Node.js crypto support](https://developers.cloudflare.com/workers/runtime-apis/nodejs/crypto/).
+
 ## Assign tables
 
-Each session has an optional `table_number` (1, 2, or 3). Assign it later using the existing organizer login:
+Each session has an optional `table_number` (1, 2, or 3). Use the organizer sign-in above, or the CLI with a Cloudflare login:
 
 ```sh
 node cloudflare/moderate.mjs tables

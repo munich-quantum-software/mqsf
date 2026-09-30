@@ -10,9 +10,9 @@ import { restoreSQL, assignTableSQL } from "./moderate.mjs";
 const platform = await getPlatformProxy({ configPath: "cloudflare/wrangler.jsonc", persist: false, remoteBindings: false });
 const { env } = platform;
 const origin = "https://munich-quantum-software.github.io";
-async function request(method = "GET", path = "/api/meetups", data, from = origin) {
+async function request(method = "GET", path = "/api/meetups", data, from = origin, authorization) {
   const response = await worker.fetch(new Request(`https://calendar.example${path}`, {
-    method, headers: { Origin: from, ...(data !== undefined ? { "Content-Type": "application/json" } : {}) },
+    method, headers: { Origin: from, ...(data !== undefined ? { "Content-Type": "application/json" } : {}), ...(authorization ? { Authorization: authorization } : {}) },
     ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
   }), env);
   return { status: response.status, headers: response.headers, data: response.status === 204 ? null : await response.json() };
@@ -33,6 +33,7 @@ try {
   const preflight = await request("OPTIONS");
   assert.equal(preflight.status, 204);
   assert.equal(preflight.headers.get("Access-Control-Allow-Origin"), origin);
+  assert.match(preflight.headers.get("Access-Control-Allow-Headers"), /Authorization/);
   const created = await request("POST", "/api/meetups", { ...draft, contact_email: `  ${draft.contact_email}  ` });
   assert.equal(created.status, 201);
   const first = created.data.event, path = `/api/meetups/${first.id}`;
@@ -193,6 +194,62 @@ try {
   assert.deepEqual(notification, { name: "Table changed", value: "**Before**\n1\n\n**After**\nNot assigned" });
   assert.throws(() => assignTableSQL(tableA.id, 4, 1));
   await assert.rejects(env.DB.prepare("UPDATE events SET table_number=4 WHERE id=?").bind(tableA.id).run(), /CHECK constraint/);
+
+  // Organizer access is server-checked on every request; no email or key is returned.
+  const key = crypto.randomUUID(), authorization = `Bearer ${key}`;
+  delete env.ORGANIZER_ACCESS_KEY;
+  assert.equal((await request("POST", "/api/organizer", undefined, origin, authorization)).status, 503);
+  env.ORGANIZER_ACCESS_KEY = "too-short";
+  assert.equal((await request("POST", "/api/organizer", undefined, origin, authorization)).status, 503);
+  env.ORGANIZER_ACCESS_KEY = key;
+  assert.equal((await request("POST", "/api/organizer")).status, 401);
+  for (const invalid of [`Bearer ${crypto.randomUUID()}`, `Basic ${key}`, "Bearer short"]) {
+    assert.equal((await request("POST", "/api/organizer", undefined, origin, invalid)).status, 401);
+  }
+  assert.equal((await request("POST", `/api/organizer?key=${key}`)).status, 401, "Keys in URLs cannot authorize requests");
+  assert.equal((await request("GET", "/api/organizer", undefined, origin, authorization)).status, 405);
+  assert.equal((await request("POST", "/api/organizer", undefined, "https://unrelated.example", authorization)).status, 403);
+  assert.deepEqual((await request("POST", "/api/organizer", undefined, origin, authorization)).data, { organizer: true });
+  const organizerDraft = { ...draft, start: "22:00", end: "23:00" };
+  const a = (await request("POST", "/api/meetups", organizerDraft)).data.event;
+  const b = (await request("POST", "/api/meetups", { ...organizerDraft, contact_email: "another@example.test" })).data.event;
+  assert.equal((await request("POST", "/api/meetups", organizerDraft)).status, 201);
+  let assigned = await request("PUT", `/api/meetups/${a.id}`, { ...a, table_number: 1 }, origin, authorization);
+  assert.equal(assigned.status, 200);
+  assert.equal(assigned.data.event.table_number, 1);
+  assert.equal(JSON.stringify(assigned.data).includes("contact_email"), false);
+  assert.equal((await env.DB.prepare("SELECT contact_email FROM events WHERE id=?").bind(a.id).first()).contact_email, contact_email);
+  const participant = await request("PUT", `/api/meetups/${a.id}`, { ...assigned.data.event, contact_email, table_number: 2 });
+  assert.equal(participant.data.event.table_number, 1, "Participants cannot reassign tables");
+  assigned = participant;
+  const beforeOrganizerFailure = (await request()).data, organizerJournal = await historyCount();
+  for (const table_number of [0, 4, "1", true, [], {}]) {
+    assert.equal((await request("PUT", `/api/meetups/${a.id}`, { ...assigned.data.event, table_number }, origin, authorization)).status, 400);
+  }
+  for (const method of ["PUT", "DELETE"]) {
+    assert.equal((await request(method, `/api/events/${a.id}`, { ...a, contact_email }, origin, `Bearer ${crypto.randomUUID()}`)).status, 401, "Invalid organizer keys cannot fall back to email access");
+    assert.equal((await request(method, `/api/events/${a.id}`, a, origin, authorization)).status, 409, "Organizer changes still enforce revisions");
+  }
+  assert.equal((await request("PUT", `/api/events/${b.id}`, { ...b, table_number: 1 }, origin, authorization)).status, 422, "Organizers cannot double-book a table");
+  assert.equal((await request("POST", "/api/meetups", { ...organizerDraft, table_number: 3 }, origin, authorization)).status, 422, "Organizers cannot exceed the parallel-session limit");
+  assert.deepEqual((await request()).data, beforeOrganizerFailure);
+  assert.deepEqual(await historyCount(), organizerJournal, "Denied organizer requests leave history and notifications unchanged");
+  const { table_number, ...withoutTable } = assigned.data.event;
+  assigned = await request("PUT", `/api/meetups/${a.id}`, { ...withoutTable, title: "Organizer edit" }, origin, authorization);
+  assert.equal(assigned.data.event.table_number, 1, "Omitted assignments are preserved");
+  assigned = await request("PUT", `/api/meetups/${a.id}`, { ...assigned.data.event, table_number: null }, origin, authorization);
+  assert.equal(assigned.data.event.table_number, null, "Organizers can clear assignments");
+  const otherOwner = await request("PUT", `/api/events/${b.id}`, { ...b, table_number: 2 }, origin, authorization);
+  assert.equal(otherOwner.status, 200, "Organizers can edit events created with another email");
+  assert.equal((await request("DELETE", `/api/meetups/${a.id}`, { version: assigned.data.event.version }, origin, authorization)).status, 200);
+  assert.equal((await request("DELETE", `/api/events/${b.id}`, { version: otherOwner.data.event.version }, origin, authorization)).status, 200);
+  const organizerHistory = (await env.DB.prepare("SELECT action, before_json, after_json FROM event_changes WHERE event_id=? ORDER BY rowid").bind(b.id).all()).results;
+  assert.deepEqual(organizerHistory.map(change => change.action), ["created", "updated", "deleted"]);
+  assert.equal(JSON.parse(organizerHistory[1].after_json).table_number, 2, "Assignments enter the existing history/notification outbox");
+  assert.equal(JSON.parse(organizerHistory[2].before_json).contact_email, "another@example.test");
+  env.ORGANIZER_ACCESS_KEY = crypto.randomUUID();
+  assert.equal((await request("POST", "/api/organizer", undefined, origin, authorization)).status, 401, "Rotating the key revokes old access");
+  assert.equal((await request("DELETE", `/api/meetups/${third.id}`, { version: 999 }, origin, authorization)).status, 401);
 
   const realFetch = globalThis.fetch, deliveries = [];
   let releaseDelivery, sawDelivery;

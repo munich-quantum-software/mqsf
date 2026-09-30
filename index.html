@@ -11,9 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css?v=3">
-    <link rel="stylesheet" href="./side-events/styles.css?v=4">
+    <link rel="stylesheet" href="./side-events/styles.css?v=5">
     <script src="./side-events/config.js" defer></script>
-    <script type="module" src="./side-events/app.mjs?v=8"></script>
+    <script type="module" src="./side-events/app.mjs?v=9"></script>
     <script src="./assets/waves.js" defer></script>
     <script src="./script.js?v=3" defer></script>
   </head>
@@ -106,6 +106,10 @@
             <div class="connection-error" id="connection-error" role="alert" hidden>
               <span id="connection-message"></span><button class="text-button" id="retry">Try again</button>
             </div>
+            <div class="organizer-toolbar" id="organizer-toolbar" hidden>
+              <p><strong>Organizer mode</strong> · Edit any event and assign tables.</p>
+              <button type="button" class="text-button" id="organizer-signout">Sign out</button>
+            </div>
             <section class="calendar-card" id="calendar" aria-label="Side-event calendar" tabindex="-1">
               <div class="calendar-toolbar">
                 <div class="calendar-caption"><span class="calendar-symbol" aria-hidden="true">▦</span><strong>October 2026</strong><span id="event-count" class="event-count"></span></div>
@@ -160,6 +164,18 @@
 
     </div>
     <div class="side-events-ui">
+      <dialog id="organizer-dialog" aria-labelledby="organizer-title">
+        <form id="organizer-form">
+          <div class="dialog-top"><p class="dialog-eyebrow">MQSF 2026 · Organizers</p><button type="button" class="icon-button" id="close-organizer" aria-label="Close organizer sign-in">×</button></div>
+          <h2 id="organizer-title">Organizer sign-in</h2>
+          <p class="editor-intro">Edit any event and assign tables 1–3.</p>
+          <label for="organizer-key">Organizer access key</label>
+          <input type="password" id="organizer-key" minlength="32" maxlength="256" pattern="[!-~]{32,256}" autocomplete="off" aria-describedby="organizer-hint" required>
+          <p class="field-hint" id="organizer-hint">Access lasts until you sign out or reload this page.</p>
+          <p class="form-error" id="organizer-error" role="alert" hidden></p>
+          <div class="editor-actions"><button type="submit" class="button button-primary">Sign in</button></div>
+        </form>
+      </dialog>
       <dialog id="details-dialog" aria-labelledby="details-title">
         <div class="dialog-top"><p class="dialog-eyebrow">Community side event</p><button class="icon-button" id="close-details" aria-label="Close event details">×</button></div>
         <h2 id="details-title"></h2>
@@ -183,10 +199,17 @@
             <label for="event-organizers">Organizer name(s)</label>
             <input id="event-organizers" name="organizers" maxlength="200" placeholder="Who is organizing this event?" aria-describedby="organizers-hint" required>
             <p class="field-hint" id="organizers-hint">Shown publicly with the event.</p>
-            <label for="event-contact-email">Contact email (private)</label>
-            <input type="email" id="event-contact-email" name="contact_email" maxlength="254" autocomplete="off" aria-describedby="contact-hint contact-edit-hint" required>
-            <p class="field-hint" id="contact-hint">Your email address is stored privately so the MQSF organizers can contact you about your event or table reservation. It is never displayed in the calendar. Prefer not to submit it here? Email <a href="mailto:robert@mq.sc">robert@mq.sc</a> instead.</p>
-            <p class="field-hint" id="contact-edit-hint" hidden>Enter the contact email used to create this event to save changes or delete it. For privacy, the saved address is never shown here. If you need help, contact the MQSF organizers.</p>
+            <div id="contact-fields">
+              <label for="event-contact-email">Contact email (private)</label>
+              <input type="email" id="event-contact-email" name="contact_email" maxlength="254" autocomplete="off" aria-describedby="contact-hint contact-edit-hint" required>
+              <p class="field-hint" id="contact-hint">Your email address is stored privately so the MQSF organizers can contact you about your event or table reservation. It is never displayed in the calendar. Prefer not to submit it here? Email <a href="mailto:robert@mq.sc">robert@mq.sc</a> instead.</p>
+              <p class="field-hint" id="contact-edit-hint" hidden>Enter the contact email used to create this event to save changes or delete it. For privacy, the saved address is never shown here. If you need help, contact the MQSF organizers.</p>
+            </div>
+            <div id="table-fields" hidden>
+              <label for="event-table">Table assignment</label>
+              <select id="event-table" name="table_number" aria-describedby="table-hint"><option value="">Not assigned</option><option value="1">Table 1</option><option value="2">Table 2</option><option value="3">Table 3</option></select>
+              <p class="field-hint" id="table-hint">Only MQSF organizers can assign tables. Overlapping events cannot share the same table.</p>
+            </div>
             <div class="time-fields">
               <div><label for="event-date">Day</label><select id="event-date" name="date" required><option value="2026-10-14">Wed, 14 October</option><option value="2026-10-15">Thu, 15 October</option></select></div>
               <div><label for="event-start">Start</label><input type="time" id="event-start" name="start" value="10:00" required></div>
@@ -201,9 +224,11 @@
           </fieldset>
           <div class="form-error" id="form-error" role="alert" hidden></div>
           <button type="button" class="text-button" id="load-latest" hidden>Load latest version (replaces your draft)</button>
+          <button type="button" class="text-button" id="organizer-reauth" hidden>Organizer sign-in</button>
           <div id="discard-confirm" class="confirmation" hidden><p>Discard your unsaved changes?</p><button type="button" class="button button-secondary" id="keep-editing">Keep editing</button><button type="button" class="button button-danger" id="discard-draft">Discard changes</button></div>
           <div id="delete-confirm" class="confirmation" hidden><p>Remove this event from the public timetable? The MQSF organizers keep a private history for recovery.</p><button type="button" class="button button-secondary" id="keep-event">Keep event</button><button type="button" class="button button-danger" id="confirm-delete">Delete event</button></div>
-          <p class="shared-note">Event details are public. Editing or deleting requires the original contact email, which stays private. The MQSF organizers receive notifications and keep a private history of changes and deletions for moderation and recovery.</p>
+          <p class="shared-note" id="participant-note">Event details are public. Editing or deleting requires the original contact email, which stays private. The MQSF organizers receive notifications and keep a private history of changes and deletions for moderation and recovery.</p>
+          <p class="shared-note" id="organizer-note" hidden>You are signed in as an MQSF organizer. Contact emails remain private and unchanged when editing. Changes and deletions are recorded for moderation and recovery.</p>
           <div class="editor-actions"><button type="button" class="text-button delete-button" id="delete-event" hidden>Delete event</button><div class="dialog-actions"><button type="button" class="button button-secondary" id="cancel-editor">Cancel</button><button type="submit" class="button button-primary" id="save-event">Add event</button></div></div>
         </form>
       </dialog>

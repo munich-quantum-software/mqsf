@@ -1,4 +1,4 @@
-// Maintainer-only CLI. Uses Wrangler's existing Cloudflare login, never a public admin endpoint.
+// Maintainer-only CLI. Uses Wrangler's existing Cloudflare login independently of website organizer access.
 import { execFileSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 

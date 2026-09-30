@@ -3,19 +3,22 @@ from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 import json
 import sqlite3
+import secrets
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from server import create_app, validate_event, RequestError
 
 
-def request(app, method="GET", path="/mqsf/api/meetups", data=None, origin=None, content_type="application/json"):
+def request(app, method="GET", path="/mqsf/api/meetups", data=None, origin=None, content_type="application/json", authorization=None):
     payload = json.dumps(data).encode() if data is not None else b""
     environ = {"REQUEST_METHOD": method, "PATH_INFO": path, "CONTENT_TYPE": content_type,
                "CONTENT_LENGTH": str(len(payload)), "wsgi.input": BytesIO(payload),
                "wsgi.url_scheme": "http", "HTTP_HOST": "localhost:8030"}
     if origin:
         environ["HTTP_ORIGIN"] = origin
+    if authorization:
+        environ["HTTP_AUTHORIZATION"] = authorization
     captured = []
     body = b"".join(app(environ, lambda status, headers: captured.append((int(status[:3]), dict(headers)))))
     assert len(captured) == 1, "Each request must return exactly one response"
@@ -170,4 +173,51 @@ with TemporaryDirectory() as directory:
     conflict = request(tables, "PUT", "/api/meetups/" + b["id"], {**b, "version": 2, "start": "10:30", "contact_email": event["contact_email"]})
     assert conflict[0] == 422 and "assigned table is already occupied" in conflict[1]["error"]
     assert request(tables)[1] == before_conflict
+    organizer_db = Path(directory) / "organizer.sqlite3"
+    key = secrets.token_urlsafe(32)
+    authorization = "Bearer " + key
+    organizer = create_app(organizer_db, organizer_key=key)
+    assert request(organizer, "OPTIONS", "/api/organizer")[2]["Access-Control-Allow-Headers"] == "Content-Type, Authorization"
+    assert request(organizer, "POST", "/api/organizer")[0] == 401
+    assert request(organizer, "POST", "/api/organizer", authorization="Bearer " + secrets.token_urlsafe(32))[0] == 401
+    assert request(organizer, "POST", "/api/organizer", authorization="Basic " + key)[0] == 401
+    assert request(organizer, "GET", "/api/organizer", authorization=authorization)[0] == 405
+    assert request(organizer, "POST", "/api/organizer", origin="https://unrelated.example", authorization=authorization)[0] == 403
+    assert request(organizer, "POST", "/api/organizer", authorization=authorization)[1] == {"organizer": True}
+    for invalid_key in ["", "too-short"]:
+        unavailable = create_app(organizer_db, organizer_key=invalid_key)
+        assert request(unavailable, "POST", "/api/organizer", authorization=authorization)[0] == 503
+    a = request(organizer, "POST", data=event)[1]["event"]
+    b = request(organizer, "POST", data={**event, "contact_email": "another@example.test"})[1]["event"]
+    assert request(organizer, "POST", data=event)[0] == 201
+    path = "/api/meetups/" + a["id"]
+    assigned = request(organizer, "PUT", path, {**a, "table_number": 1}, authorization=authorization)
+    assert assigned[0] == 200 and assigned[1]["event"]["table_number"] == 1
+    assert "contact_email" not in json.dumps(assigned[1])
+    participant = request(organizer, "PUT", path, {**assigned[1]["event"], "table_number": 2, "contact_email": event["contact_email"]})
+    assert participant[1]["event"]["table_number"] == 1
+    before = request(organizer)[1]
+    for table in [0, 4, "1", True, [], {}]:
+        assert request(organizer, "PUT", path, {**participant[1]["event"], "table_number": table}, authorization=authorization)[0] == 400
+    for method in ["PUT", "DELETE"]:
+        assert request(organizer, method, path, {**a, "contact_email": event["contact_email"]}, authorization="Bearer " + secrets.token_urlsafe(32))[0] == 401
+        assert request(organizer, method, path, a, authorization=authorization)[0] == 409
+    assert request(organizer, "PUT", "/api/events/" + b["id"], {**b, "table_number": 1}, authorization=authorization)[0] == 422
+    assert request(organizer, "POST", data={**event, "table_number": 3}, authorization=authorization)[0] == 422
+    assert request(organizer)[1] == before
+    with sqlite3.connect(organizer_db) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM event_changes").fetchone()[0] == 5, "Denied requests create no history or notifications"
+        assert connection.execute("SELECT contact_email FROM events WHERE id=?", (a["id"],)).fetchone()[0] == event["contact_email"]
+    without_table = {k: v for k, v in participant[1]["event"].items() if k != "table_number"}
+    assigned = request(organizer, "PUT", path, {**without_table, "title": "Organizer edit"}, authorization=authorization)
+    assert assigned[1]["event"]["table_number"] == 1
+    cleared = request(organizer, "PUT", path, {**assigned[1]["event"], "table_number": None}, authorization=authorization)
+    assert cleared[1]["event"]["table_number"] is None
+    other_owner = request(organizer, "PUT", "/api/events/" + b["id"], {**b, "table_number": 2}, authorization=authorization)
+    assert other_owner[0] == 200
+    assert request(organizer, "DELETE", path, {"version": cleared[1]["event"]["version"]}, authorization=authorization)[0] == 200
+    assert request(organizer, "DELETE", "/api/events/" + b["id"], {"version": other_owner[1]["event"]["version"]}, authorization=authorization)[0] == 200
+    rotated = create_app(organizer_db, organizer_key=secrets.token_urlsafe(32))
+    assert request(rotated, "POST", "/api/organizer", authorization=authorization)[0] == 401
+    assert request(rotated, "DELETE", path, {"version": 999}, authorization=authorization)[0] == 401
 print("Calendar API checks passed: persistence, organizers, migration, concurrent edits, deletion, hours, navigation, and path isolation.")

@@ -4,6 +4,8 @@ import argparse
 from contextlib import closing
 from datetime import datetime, timezone
 from http import HTTPStatus
+import hashlib
+import hmac
 import json
 import mimetypes
 import os
@@ -76,7 +78,21 @@ def contact_email(data):
     return email
 
 
-def create_app(database=None, allowed_origins=None, demo=False, seed_examples=False):
+def organizer_access(environ, secret):
+    authorization = environ.get("HTTP_AUTHORIZATION")
+    if not authorization:
+        return False
+    if not isinstance(secret, str) or not re.fullmatch(r"[!-~]{32,256}", secret):
+        raise RequestError(503, "Organizer access is not configured. Contact the MQSF organizers.")
+    match = re.fullmatch(r"Bearer ([!-~]{32,256})", authorization)
+    if not match or not hmac.compare_digest(hashlib.sha256(match[1].encode()).digest(), hashlib.sha256(secret.encode()).digest()):
+        raise RequestError(401, "Organizer access key is invalid. Sign in again or sign out to use the contact email.")
+    return True
+
+
+def create_app(database=None, allowed_origins=None, demo=False, seed_examples=False, organizer_key=None):
+    if organizer_key is None:
+        organizer_key = os.environ.get("ORGANIZER_ACCESS_KEY")
     if allowed_origins is None:
         allowed_origins = tuple(filter(None, os.environ.get("MQSF_ALLOWED_ORIGINS", "").split(",")))
     config = json.loads((PUBLIC / "conference.json").read_text())
@@ -157,7 +173,8 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                     break
             method = environ["REQUEST_METHOD"]
             match = re.fullmatch(r"/api/(?:meetups|events)(?:/([a-f0-9-]{36}))?", path)
-            if not match:
+            login = path == "/api/organizer"
+            if not match and not login:
                 filename = "index.html" if path == "/" else path.lstrip("/")
                 public = PUBLIC if calendar_path else ROOT
                 allowed = filename in {
@@ -176,7 +193,13 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                 raise RequestError(403, "This website is not configured to edit the calendar.")
             if method == "OPTIONS":
                 return reply(204, b"", extra=[("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"),
-                                              ("Access-Control-Allow-Headers", "Content-Type")])
+                                              ("Access-Control-Allow-Headers", "Content-Type, Authorization")])
+            if login:
+                if method != "POST":
+                    raise RequestError(405, "Method not allowed.")
+                if not organizer_access(environ, organizer_key):
+                    raise RequestError(401, "Enter the organizer access key.")
+                return reply(200, {"organizer": True})
             event_id = match.group(1)
             with closing(connect()) as connection, connection:
                 if method == "GET" and not event_id:
@@ -184,29 +207,34 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                     return reply(200, {"events": events, "demo": demo})
                 if method not in ("POST", "PUT", "DELETE") or (method == "POST") == bool(event_id):
                     raise RequestError(405, "Method not allowed.")
+                organizer = organizer_access(environ, organizer_key)
                 data = read_json(environ)
                 if event_id:
                     if type(data.get("version")) is not int or data["version"] < 1:
                         raise RequestError(400, "The event version is missing. Reload the event and try again.")
-                email = contact_email(data)
+                email = "" if organizer and event_id else contact_email(data)
+                assign_table = organizer and "table_number" in data
+                table = data["table_number"] if assign_table else None
+                if assign_table and table is not None and (type(table) is not int or table not in (1, 2, 3)):
+                    raise RequestError(400, "Choose table 1, 2, 3, or not assigned.")
                 if method == "DELETE":
-                    result = connection.execute("DELETE FROM events WHERE id=? AND version=? AND contact_email=? COLLATE NOCASE", (event_id, data["version"], email))
+                    result = connection.execute("DELETE FROM events WHERE id=? AND version=? AND (? OR contact_email=? COLLATE NOCASE)", (event_id, data["version"], organizer, email))
                 else:
                     event = validate_event(data, config)
                     values = tuple(event[key] for key in FIELDS)
                     now = datetime.now(timezone.utc).isoformat()
                     if method == "POST":
                         event_id = str(uuid4())
-                        connection.execute("INSERT INTO events (id, date, start, end, title, description, audience, organizers, contact_email, version, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)", (event_id, *values, email, now))
+                        connection.execute("INSERT INTO events (id, date, start, end, title, description, audience, organizers, contact_email, version, updated_at, table_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)", (event_id, *values, email, now, table))
                     else:
                         result = connection.execute("""UPDATE events SET date=?, start=?, end=?, title=?, description=?, audience=?, organizers=?,
-                            updated_at=?, version=version+1
-                            WHERE id=? AND version=? AND contact_email=? COLLATE NOCASE""", (*values, now, event_id, data["version"], email))
+                            table_number=CASE WHEN ? THEN ? ELSE table_number END, updated_at=?, version=version+1
+                            WHERE id=? AND version=? AND (? OR contact_email=? COLLATE NOCASE)""", (*values, assign_table, table, now, event_id, data["version"], organizer, email))
                 if method != "POST" and not result.rowcount:
                     existing = connection.execute("SELECT contact_email=? COLLATE NOCASE AS verified FROM events WHERE id=?", (email, event_id)).fetchone()
                     if not existing:
                         raise RequestError(404, "This event was removed. Your changes have not been saved.")
-                    if not existing["verified"]:
+                    if not organizer and not existing["verified"]:
                         raise RequestError(403, "The contact email does not match this event. Enter the address used to create it, or contact the MQSF organizers.")
                     raise RequestError(409, "Someone changed this event. Load the latest version before saving or deleting it.")
                 if method == "DELETE":

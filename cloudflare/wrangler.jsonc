@@ -4,6 +4,7 @@
   "account_id": "fbdd65f914df8b6b5c60c0aa4d4de0bd",
   "main": "worker.mjs",
   "compatibility_date": "2026-09-25",
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "send_metrics": false,
   "observability": { "enabled": false },
