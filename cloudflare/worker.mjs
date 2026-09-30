@@ -130,9 +130,15 @@ export default {
         const event = validate(data), values = Object.keys(fields).map(key => event[key]);
         const updated = new Date().toISOString();
         if (method === "POST") {
-          saved = await env.DB.prepare(`INSERT INTO events
+          // Choose and reserve a free table in the same statement, including concurrent saves.
+          saved = await env.DB.prepare(`WITH assignment AS (
+            SELECT COALESCE(?, (SELECT MIN(number) FROM (SELECT 1 AS number UNION ALL SELECT 2 UNION ALL SELECT 3) AS tables
+              WHERE NOT EXISTS (SELECT 1 FROM events WHERE date=? AND start<? AND end>? AND table_number=tables.number))) AS number
+          ) INSERT INTO events
             (date, start, end, title, description, audience, organizers, contact_email, updated_at, id, table_number)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING ${publicColumns}`).bind(...values, email, updated, crypto.randomUUID(), table).first();
+            SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, number FROM assignment WHERE number IS NOT NULL
+            RETURNING ${publicColumns}`).bind(table, event.date, event.end, event.start, ...values, email, updated, crypto.randomUUID()).first();
+          if (!saved) throw new RequestError(422, "No table is free for this entire time slot. At most 3 sessions can run at the same time. Choose another time or contact the MQSF organizers.");
         } else {
           saved = await env.DB.prepare(`UPDATE events SET date=?, start=?, end=?, title=?, description=?, audience=?, organizers=?,
             table_number=CASE WHEN ? THEN ? ELSE table_number END, updated_at=?, version=version+1

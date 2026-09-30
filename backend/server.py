@@ -225,7 +225,15 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                     now = datetime.now(timezone.utc).isoformat()
                     if method == "POST":
                         event_id = str(uuid4())
-                        connection.execute("INSERT INTO events (id, date, start, end, title, description, audience, organizers, contact_email, version, updated_at, table_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)", (event_id, *values, email, now, table))
+                        # Choose and reserve a table atomically, as in the Cloudflare API.
+                        saved = connection.execute("""WITH assignment AS (
+                            SELECT COALESCE(?, (SELECT MIN(number) FROM (SELECT 1 AS number UNION ALL SELECT 2 UNION ALL SELECT 3) AS tables
+                                WHERE NOT EXISTS (SELECT 1 FROM events WHERE date=? AND start<? AND end>? AND table_number=tables.number))) AS number
+                            ) INSERT INTO events (id, date, start, end, title, description, audience, organizers, contact_email, version, updated_at, table_number)
+                            SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, number FROM assignment WHERE number IS NOT NULL RETURNING id""",
+                            (table, event["date"], event["end"], event["start"], event_id, *values, email, now)).fetchone()
+                        if not saved:
+                            raise RequestError(422, "No table is free for this entire time slot. At most 3 sessions can run at the same time. Choose another time or contact the MQSF organizers.")
                     else:
                         result = connection.execute("""UPDATE events SET date=?, start=?, end=?, title=?, description=?, audience=?, organizers=?,
                             table_number=CASE WHEN ? THEN ? ELSE table_number END, updated_at=?, version=version+1

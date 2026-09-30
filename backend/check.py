@@ -39,7 +39,7 @@ with TemporaryDirectory() as directory:
     first = data["event"]
     assert first["title"] == event["title"] and first["version"] == 1
     assert set(first) == (set(event) - {"contact_email"}) | {"id", "version", "updated_at", "table_number"}, "Store only public event data and revision metadata"
-    assert first["table_number"] is None
+    assert first["table_number"] == 1
     assert first["organizers"] == event["organizers"]
     second_client = create_app(database)
     assert request(second_client)[1]["events"] == [first], "Edits must persist across clients and restarts"
@@ -115,7 +115,7 @@ with TemporaryDirectory() as directory:
         connection.execute("CREATE TABLE events (id TEXT PRIMARY KEY, date TEXT, start TEXT, end TEXT, title TEXT, description TEXT, audience TEXT, version INTEGER, updated_at TEXT)")
         connection.execute("INSERT INTO events VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", tuple(first[key] for key in ("id", "date", "start", "end", "title", "description", "audience", "version", "updated_at")))
     migrated = request(create_app(legacy_db))[1]["events"][0]
-    assert migrated == {**first, "organizers": ""}, "Adding organizers must preserve existing events"
+    assert migrated == {**first, "organizers": "", "table_number": None}, "Adding organizers must preserve existing events"
     assert request(create_app(legacy_db))[1]["events"][0] == migrated, "Migration is safe to repeat"
     seeded_db = Path(directory) / "seeded.sqlite3"
     seeded = create_app(seeded_db, seed_examples=True)
@@ -137,6 +137,7 @@ with TemporaryDirectory() as directory:
         results = list(pool.map(lambda _: request(capped, "POST", data=event), range(2)))
     assert sorted(r[0] for r in results) == [201, 422], "Only one concurrent save can take the last place"
     third = next(r[1]["event"] for r in results if r[0] == 201)
+    assert sorted(e["table_number"] for e in request(capped)[1]["events"]) == [1, 2, 3], "Concurrent creates receive different tables"
     assert request(capped, "PUT", "/api/meetups/" + third["id"], {**third, "title": "Edited at capacity", "contact_email": event["contact_email"]})[0] == 200
     before_rejected = request(capped)[1]
     assert request(capped, "POST", data={**event, "start": "09:00", "end": "12:00"})[0] == 422
@@ -153,8 +154,12 @@ with TemporaryDirectory() as directory:
     assert request(capped, "PUT", "/api/events/" + adjacent[0]["id"], {**event, "version": 1})[0] == 422
     assert request(capped)[1] == before_rejected, "Rejected edits preserve the original event"
     assert request(capped, "DELETE", "/api/meetups/" + third["id"], {"version": 2, "contact_email": event["contact_email"]})[0] == 200
+    with sqlite3.connect(capped_db) as connection:
+        for e in adjacent:
+            connection.execute("UPDATE events SET table_number=?, version=version+1 WHERE id=?", (third["table_number"], e["id"]))
+            e["version"] += 1
     with ThreadPoolExecutor(max_workers=2) as pool:
-        results = list(pool.map(lambda e: request(capped, "PUT", "/api/meetups/" + e["id"], {**event, "version": 1})[0], adjacent))
+        results = list(pool.map(lambda e: request(capped, "PUT", "/api/meetups/" + e["id"], {**event, "version": e["version"]})[0], adjacent))
     assert sorted(results) == [200, 422], "Concurrent edits cannot overbook the last place"
     for start, end in [("17:00", "18:00"), ("18:00", "19:00"), ("19:00", "20:00"), ("17:00", "20:00")]:
         assert request(capped, "POST", data={**event, "start": start, "end": end})[0] == 201
@@ -162,7 +167,7 @@ with TemporaryDirectory() as directory:
     tables = create_app(tables_db)
     a = request(tables, "POST", data={**event, "table_number": 3})[1]["event"]
     b = request(tables, "POST", data={**event, "start": "11:00", "end": "12:00"})[1]["event"]
-    assert a["table_number"] is None, "Public requests cannot assign tables"
+    assert a["table_number"] == b["table_number"] == 1, "Assign tables automatically, reuse touching endpoints, and ignore public choices"
     with sqlite3.connect(tables_db) as connection:
         connection.execute("UPDATE events SET table_number=1, version=version+1")
         row = connection.execute("SELECT after_json FROM event_changes WHERE event_id=? ORDER BY rowid DESC LIMIT 1", (a["id"],)).fetchone()
@@ -217,6 +222,15 @@ with TemporaryDirectory() as directory:
     assert other_owner[0] == 200
     assert request(organizer, "DELETE", path, {"version": cleared[1]["event"]["version"]}, authorization=authorization)[0] == 200
     assert request(organizer, "DELETE", "/api/events/" + b["id"], {"version": other_owner[1]["event"]["version"]}, authorization=authorization)[0] == 200
+    for table, start, end in [(1, "08:00", "08:15"), (2, "08:15", "08:30"), (3, "08:30", "08:45")]:
+        created = request(organizer, "POST", data={**event, "start": start, "end": end, "table_number": table}, authorization=authorization)
+        assert created[0] == 201 and created[1]["event"]["table_number"] == table
+    before = request(organizer)[1]
+    no_free_table = request(organizer, "POST", data={**event, "start": "08:00", "end": "08:45"})
+    assert no_free_table[0] == 422 and "No table is free for this entire time slot" in no_free_table[1]["error"]
+    assert request(organizer)[1] == before, "Do not move existing assignments or create an unassigned event"
+    automatic = request(organizer, "POST", data={**event, "date": "2026-10-15", "start": "08:00", "end": "08:45", "table_number": None}, authorization=authorization)
+    assert automatic[0] == 201 and automatic[1]["event"]["table_number"] == 1
     rotated = create_app(organizer_db, organizer_key=secrets.token_urlsafe(32))
     assert request(rotated, "POST", "/api/organizer", authorization=authorization)[0] == 401
     assert request(rotated, "DELETE", path, {"version": 999}, authorization=authorization)[0] == 401

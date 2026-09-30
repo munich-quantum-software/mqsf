@@ -38,7 +38,7 @@ try {
   assert.equal(created.status, 201);
   const first = created.data.event, path = `/api/meetups/${first.id}`;
   const { contact_email, ...publicDraft } = draft;
-  assert.deepEqual(first, { ...publicDraft, id: first.id, version: 1, updated_at: first.updated_at, table_number: null });
+  assert.deepEqual(first, { ...publicDraft, id: first.id, version: 1, updated_at: first.updated_at, table_number: 1 });
   assert.deepEqual((await request()).data.events, [first]);
   // Already-open clients can still read and edit the same records through the old route.
   const legacyPath = `/api/events/${first.id}`;
@@ -78,6 +78,7 @@ try {
   const history = (await env.DB.prepare("SELECT * FROM event_changes WHERE event_id=? ORDER BY rowid").bind(first.id).all()).results;
   assert.deepEqual(history.map(row => row.action), ["created", "updated", "updated", "updated", "deleted"], "Conflicts must not create history");
   assert.equal(JSON.parse(history.at(-2).before_json).contact_email, contact_email);
+  assert.equal(JSON.parse(history[0].after_json).table_number, 1, "Creation history and notifications include the automatic assignment");
   assert.equal(JSON.parse(history.at(-1).before_json).contact_email, contact_email);
   assert.equal(history.at(-1).after_json, null);
   for (const privatePath of ["/api/history", "/api/event_changes", "/api/meetups/" + first.id]) {
@@ -123,6 +124,7 @@ try {
   const race = await Promise.all([1, 2].map(() => request("POST", "/api/meetups", slot)));
   assert.deepEqual(race.map(result => result.status).sort(), [201, 422], "Only one concurrent save can take the last place");
   const third = race.find(result => result.status === 201).data.event;
+  assert.deepEqual((await request()).data.events.filter(e => e.date === slot.date && e.start === slot.start).map(e => e.table_number).sort(), [1, 2, 3], "Concurrent creates receive different tables");
   assert.match(race.find(result => result.status === 422).data.error, /At most 3 sessions/);
   assert.equal((await request("PUT", `/api/meetups/${third.id}`, { ...third, title: "Edited at capacity", contact_email })).status, 200, "An edit must not count itself twice");
   const beforeCapacityFailure = (await request()).data;
@@ -149,10 +151,12 @@ try {
   assert.deepEqual((await request()).data, beforeEdit, "Rejected edits preserve the event and its version");
   assert.deepEqual(await historyCount(), journalBeforeEdit);
   assert.equal((await request("DELETE", `/api/meetups/${third.id}`, { version: 2, contact_email })).status, 200);
+  // Keep these edits on the newly freed table; participants cannot change their assigned table.
+  for (const event of adjacent) Object.assign(event, await env.DB.prepare(assignTableSQL(event.id, third.table_number, event.version)).first());
   const editRace = await Promise.all(adjacent.map(event => request("PUT", `/api/meetups/${event.id}`, { ...slot, version: event.version })));
   assert.deepEqual(editRace.map(result => result.status).sort(), [200, 422], "Concurrent edits also share the last place");
   const removed = await env.DB.prepare("SELECT id FROM event_changes WHERE event_id=? AND action='deleted'").bind(third.id).first();
-  await assert.rejects(env.DB.prepare(restoreSQL(removed.id, "before", 0)).first(), /MQSF_MAX_PARALLEL_SESSIONS/, "Restores cannot exceed capacity");
+  await assert.rejects(env.DB.prepare(restoreSQL(removed.id, "before", 0)).first(), /MQSF_MAX_PARALLEL_SESSIONS|MQSF_TABLE_OCCUPIED/, "Restores cannot overbook a slot or table");
   for (const [start, end] of [["17:00", "18:00"], ["18:00", "19:00"], ["19:00", "20:00"], ["17:00", "20:00"]]) {
     assert.equal((await request("POST", "/api/meetups", { ...slot, start, end })).status, 201, "Count simultaneous sessions, not total intersecting events");
   }
@@ -161,34 +165,33 @@ try {
   for (const [start, end] of [["21:00", "22:00"], ["21:30", "22:30"], ["22:00", "23:00"]]) {
     const result = await request("POST", "/api/meetups", { ...slot, start, end, table_number: 3 });
     assert.equal(result.status, 201);
-    assert.equal(result.data.event.table_number, null, "Public requests cannot assign tables");
     tableEvents.push(result.data.event);
   }
   const [tableA, tableB, tableC] = tableEvents;
-  assert.equal((await env.DB.prepare(assignTableSQL(tableA.id, 1, 1)).first()).table_number, 1);
+  assert.deepEqual(tableEvents.map(e => e.table_number), [1, 2, 1], "Assign free tables, reuse touching endpoints, and ignore public table choices");
+  assert.equal((await env.DB.prepare(assignTableSQL(tableA.id, 3, 1)).first()).table_number, 3);
   assert.equal(await env.DB.prepare(assignTableSQL(tableA.id, 2, 1)).first(), null, "Stale assignments must not overwrite changes");
-  assert.equal(await env.DB.prepare(assignTableSQL(tableA.id, 1, 2)).first(), null, "An unchanged assignment creates no revision");
+  assert.equal(await env.DB.prepare(assignTableSQL(tableA.id, 3, 2)).first(), null, "An unchanged assignment creates no revision");
+  assert.equal((await env.DB.prepare(assignTableSQL(tableA.id, 1, 2)).first()).table_number, 1);
   await assert.rejects(env.DB.prepare(assignTableSQL(tableB.id, 1, 1)).first(), /MQSF_TABLE_OCCUPIED/);
-  assert.equal((await env.DB.prepare(assignTableSQL(tableB.id, 2, 1)).first()).table_number, 2);
-  assert.equal((await env.DB.prepare(assignTableSQL(tableC.id, 1, 1)).first()).table_number, 1, "Back-to-back sessions can reuse a table");
-  const publicEdit = await request("PUT", `/api/meetups/${tableA.id}`, { ...tableA, version: 2, title: "Public edit", table_number: 3, contact_email });
+  const publicEdit = await request("PUT", `/api/meetups/${tableA.id}`, { ...tableA, version: 3, title: "Public edit", table_number: 3, contact_email });
   assert.equal(publicEdit.data.event.table_number, 1, "Public edits preserve organizer assignments");
   const beforeTableConflict = (await request()).data, journalBeforeTableConflict = await historyCount();
-  const conflict = await request("PUT", `/api/meetups/${tableC.id}`, { ...tableC, version: 2, start: "21:45", contact_email });
+  const conflict = await request("PUT", `/api/meetups/${tableC.id}`, { ...tableC, start: "21:45", contact_email });
   assert.equal(conflict.status, 422);
   assert.match(conflict.data.error, /assigned table is already occupied/);
   assert.deepEqual((await request()).data, beforeTableConflict);
   assert.deepEqual(await historyCount(), journalBeforeTableConflict);
   const assignments = await Promise.allSettled([
-    env.DB.prepare(assignTableSQL(tableA.id, 3, 3)).first(),
-    env.DB.prepare(assignTableSQL(tableB.id, 3, 2)).first(),
+    env.DB.prepare(assignTableSQL(tableA.id, 3, 4)).first(),
+    env.DB.prepare(assignTableSQL(tableB.id, 3, 1)).first(),
   ]);
   assert.deepEqual(assignments.map(result => result.status).sort(), ["fulfilled", "rejected"], "Overlapping sessions cannot race for the same table");
-  assert.equal((await env.DB.prepare(assignTableSQL(tableC.id, null, 2)).first()).table_number, null);
+  assert.equal((await env.DB.prepare(assignTableSQL(tableC.id, null, 1)).first()).table_number, null);
   const clearedTable = await env.DB.prepare("SELECT * FROM event_changes WHERE event_id=? ORDER BY rowid DESC LIMIT 1").bind(tableC.id).first();
   assert.equal(JSON.parse(clearedTable.before_json).table_number, 1);
   assert.equal(JSON.parse(clearedTable.after_json).table_number, null);
-  await env.DB.prepare(restoreSQL(clearedTable.id, "before", 3)).first();
+  await env.DB.prepare(restoreSQL(clearedTable.id, "before", 2)).first();
   assert.equal((await request()).data.events.find(event => event.id === tableC.id).table_number, 1, "Undo restores the table assignment");
   const notification = discordMessages(clearedTable)[0].embeds[0].fields.find(field => field.name === "Table changed");
   assert.deepEqual(notification, { name: "Table changed", value: "**Before**\n1\n\n**After**\nNot assigned" });
@@ -210,6 +213,20 @@ try {
   assert.equal((await request("GET", "/api/organizer", undefined, origin, authorization)).status, 405);
   assert.equal((await request("POST", "/api/organizer", undefined, "https://unrelated.example", authorization)).status, 403);
   assert.deepEqual((await request("POST", "/api/organizer", undefined, origin, authorization)).data, { organizer: true });
+  // A table must be free for the whole event; existing assignments must not move to make room.
+  for (const [index, start, end] of [[1, "08:00", "08:15"], [2, "08:15", "08:30"], [3, "08:30", "08:45"]]) {
+    const created = await request("POST", "/api/meetups", { ...draft, start, end, table_number: index }, origin, authorization);
+    assert.equal(created.status, 201);
+    assert.equal(created.data.event.table_number, index, "Organizers can override the automatic choice");
+  }
+  const beforeNoFreeTable = (await request()).data, historyBeforeNoFreeTable = await historyCount();
+  const noFreeTable = await request("POST", "/api/meetups", { ...draft, start: "08:00", end: "08:45" });
+  assert.equal(noFreeTable.status, 422);
+  assert.match(noFreeTable.data.error, /No table is free for this entire time slot/);
+  assert.deepEqual((await request()).data, beforeNoFreeTable);
+  assert.deepEqual(await historyCount(), historyBeforeNoFreeTable);
+  const automatic = await request("POST", "/api/meetups", { ...draft, date: "2026-10-15", start: "08:00", end: "08:45", table_number: null }, origin, authorization);
+  assert.equal(automatic.data.event.table_number, 1, "Organizer defaults are automatic and tables are independent across dates");
   const organizerDraft = { ...draft, start: "22:00", end: "23:00" };
   const a = (await request("POST", "/api/meetups", organizerDraft)).data.event;
   const b = (await request("POST", "/api/meetups", { ...organizerDraft, contact_email: "another@example.test" })).data.event;

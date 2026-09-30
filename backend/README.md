@@ -35,7 +35,8 @@ The checks use a temporary database and do not modify the preview.
 To test organizer mode, set `ORGANIZER_ACCESS_KEY` in the local server's environment to a test-only key of 32–256 ASCII characters
 without spaces, then open <http://127.0.0.1:8030/#organizer>. The sign-in is not linked from the public page.
 Use a separate test key, never the production key. Missing configuration leaves organizer access disabled.
-Organizer mode allows edits/deletions without the contact email and assignments to tables 1–3, with the same overlap checks.
+New events receive a free table (1–3) automatically, using the same atomic assignment as the Cloudflare API.
+Organizer mode allows edits/deletions without the contact email and changes to table assignments, with the same overlap checks.
 Sign out or reload to clear the key from the tab's memory.
 
 ## Program hours

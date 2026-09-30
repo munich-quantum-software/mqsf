@@ -120,7 +120,8 @@ under **mqsf-2026-calendar → Settings → Variables and Secrets**, then deploy
 Keep it out of Git, URLs, command arguments, and chat. Store it in a password manager.
 
 After signing in, select any event and choose **Edit event**. Organizers can edit or delete without the participant's contact email,
-and choose **Not assigned**, **Table 1**, **Table 2**, or **Table 3**. Saved contact addresses remain unchanged and hidden.
+and choose **Not assigned**, **Table 1**, **Table 2**, or **Table 3**. New events default to **Automatic** table assignment.
+Saved contact addresses remain unchanged and hidden.
 New events still require a contact address. All changes use the same revision, overlap, history, and notification checks.
 
 The key is sent only in an Authorization header over HTTPS. The API checks it with a constant-time comparison on every organizer request.
@@ -130,7 +131,15 @@ The Worker uses Cloudflare's [Node.js crypto support](https://developers.cloudfl
 
 ## Assign tables
 
-Each session has an optional `table_number` (1, 2, or 3). Use the organizer sign-in above, or the CLI with a Cloudflare login:
+New sessions automatically receive the lowest-numbered table (1–3) that is free for the entire event.
+Selection and creation run in one database statement, so concurrent saves cannot reserve the same table.
+The assignment is included in the creation history and Discord notification. Calendar colors identify each table.
+
+Participant edits keep the assigned table; only organizers can change or clear it. Existing assignments are never moved
+automatically. If no single table is free for the whole requested time, creation is rejected even when the overall overlap
+stays below three; organizers can adjust the schedule or table assignments if needed.
+
+Use the organizer sign-in above to override assignments, or the CLI with a Cloudflare login:
 
 ```sh
 node cloudflare/moderate.mjs tables
