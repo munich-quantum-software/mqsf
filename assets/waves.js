@@ -33,7 +33,7 @@
       const scale = 1.9 / z;
       return {
         x: (x - .5) / scale, y: .95 - (y - .11) / scale, z,
-        radius: r < 4 ? 6.5 : 1.2 + 19 / z,
+        radius: (r < 4 ? 6.5 : 1.2 + 19 / z) * 1.3,
         blur: blur[r] + Math.max(0, Math.abs(x - .5) - .35) * 10,
         alpha: r < 4 ? .34 + r * .015 : .41,
         phase: r * 1.7 + c * 2.39996,
@@ -108,7 +108,7 @@
             const nodeA = nodes[item.a];
             const nodeB = nodes[item.b];
             paint.strokeStyle = `rgba(39, 100, 125, ${(nodeA.alpha + nodeB.alpha) * .42})`;
-            paint.lineWidth = (1.2 + 14 / ((nodeA.z + nodeB.z) / 2)) * unit;
+            paint.lineWidth = (1.2 + 14 / ((nodeA.z + nodeB.z) / 2)) * unit * 1.3;
             paint.beginPath();
             paint.moveTo(a.x + (b.x - a.x) * item.start, a.y + (b.y - a.y) * item.start);
             paint.lineTo(a.x + (b.x - a.x) * item.end, a.y + (b.y - a.y) * item.end);
