@@ -1,9 +1,7 @@
 (() => {
   document.querySelectorAll('.wave-canvas').forEach((canvas) => {
     const context = canvas.getContext('2d');
-    const layer = document.createElement('canvas');
-    const paint = layer.getContext('2d');
-    if (!context || !paint) return;
+    if (!context) return;
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     let time = 0;
     let previous = 0;
@@ -35,7 +33,6 @@
         x: (x - .5) / scale, y: .95 - (y - .11) / scale, z,
         radius: (r < 4 ? 6.5 : 1.2 + 19 / z) * 1.3,
         blur: blur[r] + Math.max(0, Math.abs(x - .5) - .35) * 10,
-        alpha: r < 4 ? .34 + r * .015 : .41,
         phase: r * 1.7 + c * 2.39996,
       };
     }));
@@ -54,7 +51,15 @@
       }
     }
 
-    const blurLevels = [.6, 1.3, 2.6, 4.5, 7, 10, 14, 19];
+    const blurLevels = [1.2, 1.8, 2.6, 4.5, 7, 10, 14, 19];
+    const layers = blurLevels.map(() => {
+      const layer = document.createElement('canvas');
+      layer.setAttribute('aria-hidden', 'true');
+      layer.hidden = true;
+      return { canvas: layer, paint: layer.getContext('2d') };
+    });
+    if (layers.some(layer => !layer.paint)) return;
+    layers.forEach(layer => canvas.parentElement.append(layer.canvas));
     const buckets = blurLevels.map(() => []);
     const bucket = value => blurLevels.reduce((best, level, i) =>
       Math.abs(level - value) < Math.abs(blurLevels[best] - value) ? i : best, 0);
@@ -70,6 +75,7 @@
 
     function draw() {
       canvas.hidden = reducedMotion.matches;
+      layers.forEach(layer => { layer.canvas.hidden = reducedMotion.matches; });
       if (reducedMotion.matches) return;
       const unit = side / 1000;
       const offsetX = (width - side) / 2;
@@ -84,21 +90,22 @@
           y: offsetY + (.11 + (.95 - node.y - wave) * scale) * side,
         };
       });
-      context.filter = 'none';
-      const background = context.createLinearGradient(0, 0, width * .3, height);
+      const background = context.createLinearGradient(0, 0, 0, height);
       background.addColorStop(0, '#171f39');
       background.addColorStop(.55, '#17213c');
       background.addColorStop(1, '#18233c');
       context.fillStyle = background;
       context.fillRect(0, 0, width, height);
       buckets.forEach((items, i) => {
+        const { paint } = layers[i];
         paint.clearRect(0, 0, width, height);
-        paint.lineCap = 'butt';
+        // Opaque, pre-blended teal keeps overlapping lines and nodes the same color.
+        paint.fillStyle = paint.strokeStyle = '#1d3951';
+        paint.lineCap = 'round';
         items.forEach(item => {
           if (item.index !== undefined) {
             const node = nodes[item.index];
             const point = points[item.index];
-            paint.fillStyle = `rgba(39, 100, 125, ${node.alpha})`;
             paint.beginPath();
             paint.arc(point.x, point.y, node.radius * unit, 0, Math.PI * 2);
             paint.fill();
@@ -107,7 +114,6 @@
             const b = points[item.b];
             const nodeA = nodes[item.a];
             const nodeB = nodes[item.b];
-            paint.strokeStyle = `rgba(39, 100, 125, ${(nodeA.alpha + nodeB.alpha) * .42})`;
             paint.lineWidth = (1.2 + 14 / ((nodeA.z + nodeB.z) / 2)) * unit * 1.3;
             paint.beginPath();
             paint.moveTo(a.x + (b.x - a.x) * item.start, a.y + (b.y - a.y) * item.start);
@@ -115,18 +121,20 @@
             paint.stroke();
           }
         });
-        context.filter = `blur(${blurLevels[i] * unit}px)`;
-        context.drawImage(layer, 0, 0);
       });
-      context.filter = 'none';
     }
 
     function resize() {
       const rect = canvas.parentElement.getBoundingClientRect();
       const ratio = Math.min(devicePixelRatio, 1.5);
-      width = canvas.width = layer.width = Math.round(rect.width * ratio);
-      height = canvas.height = layer.height = Math.round(rect.height * ratio);
+      width = canvas.width = Math.round(rect.width * ratio);
+      height = canvas.height = Math.round(rect.height * ratio);
       side = Math.max(width, height);
+      layers.forEach((layer, i) => {
+        layer.canvas.width = width;
+        layer.canvas.height = height;
+        layer.canvas.style.filter = `blur(${blurLevels[i] * side / ratio / 1000}px)`;
+      });
       draw();
     }
     function animate(now) {
