@@ -152,7 +152,7 @@ nav a { color: inherit; text-decoration-color: var(--accent); }
 .play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; border-radius: 14px; background: #212121cc; display: grid; place-items: center; }
 .play-icon::before { content: ""; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 16px solid #fff; margin-left: 4px; }
 .video-preview button:hover .play-icon, .video-preview button:focus-visible .play-icon { background: #f00; }
-.video-preview iframe { width: 100%; height: 100%; border: 0; }
+.video-preview iframe { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border: 0; }
 
 .sponsors { padding-bottom: 20px; }
 .sponsors .section-title { margin-bottom: 24px; }
@@ -202,7 +202,7 @@ nav a { color: inherit; text-decoration-color: var(--accent); }
 @media (max-width: 850px) {
   .section { padding: 56px 24px; }
   .program-columns, .two-columns { gap: 36px; }
-  .previous-events { grid-template-columns: 1fr; gap: 48px; }
+  .previous-events { grid-template-columns: minmax(0, 1fr); gap: 48px; }
   .past-event { max-width: 580px; width: 100%; margin-inline: auto; }
   .logo-row { gap: 24px 32px; }
 }
