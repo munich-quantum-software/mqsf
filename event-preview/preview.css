@@ -123,7 +123,7 @@ nav a { color: inherit; text-decoration-color: var(--accent); }
 .register-link { font-size: 1.2rem; }
 .section-title { text-align: center; color: var(--accent); margin-bottom: 48px; }
 .title-mark { display: inline-block; position: relative; padding-bottom: .25em; --underline-color: var(--accent); }
-.title-mark::after { content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: .22em; border-top: .1em solid var(--underline-color); border-radius: 50% 50% 0 0; transform-origin: left; }
+.title-mark::after { content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: .22em; border-top: .12em solid var(--underline-color); border-radius: 50% 50% 0 0; transform-origin: left; }
 .section-title .title-mark { --underline-color: #000; }
 #events-heading { color: #000; }
 #events-heading .title-mark { --underline-color: var(--accent); }
@@ -173,13 +173,13 @@ nav a { color: inherit; text-decoration-color: var(--accent); }
 .silver a { width: 225px; height: 78px; }
 .bronze a { width: 195px; height: 64px; }
 /* Optical widths account for each mark's visible artwork and stroke weight. */
-.logo-aws { --art-width: 64%; }
-.logo-classiq { --art-width: 100%; }
-.logo-hpe { --art-width: 76%; }
-.logo-planqc { --art-width: 98%; }
-.logo-neqxt { --art-width: 83.33%; }
-.logo-quandela { --art-width: 95.83%; }
-.logo-qudora { --art-width: 86.67%; }
+.logo-aws { --art-width: 66%; }
+.logo-classiq { --art-width: 105%; }
+.logo-hpe { --art-width: 79%; }
+.logo-planqc { --art-width: 110%; }
+.logo-neqxt { --art-width: 80%; }
+.logo-quandela { --art-width: 92%; }
+.logo-qudora { --art-width: 90%; }
 .logo-xanadu { --art-width: 100%; }
 .logo-infineon { --art-width: 71.79%; }
 .logo-iqm { --art-width: 64.1%; }
@@ -187,7 +187,11 @@ nav a { color: inherit; text-decoration-color: var(--accent); }
 .logo-quantinuum { --art-width: 112.82%; max-width: none; }
 .logo-quera { --art-width: 79.49%; }
 .organizers { margin: 42px 0; gap: 50px 64px; }
-.organizers a { width: 240px; height: 90px; }
+.organizers a { width: 250px; height: 120px; }
+.organizers img { width: var(--art-width); }
+.organizer-mqsc { --art-width: 92%; }
+.organizer-tum { --art-width: 86%; }
+.organizer-mqv { --art-width: 85%; }
 .site-footer { text-align: center; padding: 52px 24px 36px; }
 .site-footer > a { display: inline-block; }
 .site-footer img { width: 110px; }
@@ -215,12 +219,16 @@ nav a { color: inherit; text-decoration-color: var(--accent); }
   .program-columns, .two-columns { grid-template-columns: 1fr; }
   .program-poster { max-width: 440px; margin-inline: auto; }
   .sponsor-tier .logo-row a { width: calc((50% - 16px) * var(--tier-scale)); max-width: calc(220px * var(--tier-scale)); height: calc(76px * var(--tier-scale)); }
-  .organizers a { width: 200px; }
+  .organizers a { width: 250px; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .65s ease, transform .65s ease; }
+  .reveal { opacity: 0; transform: translateY(36px); transition: opacity .75s ease-out, transform .75s ease-out; }
   .reveal.is-visible { opacity: 1; transform: none; }
+  .logo-row a:nth-child(2) { transition-delay: .08s; }
+  .logo-row a:nth-child(3) { transition-delay: .16s; }
+  .logo-row a:nth-child(4) { transition-delay: .24s; }
+  .logo-row a:nth-child(5) { transition-delay: .32s; }
   .title-mark.animated.is-visible::after { animation: draw-underline .5s ease-out both; }
   @keyframes draw-underline { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 }

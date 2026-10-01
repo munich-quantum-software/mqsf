@@ -20,9 +20,11 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       }
     }
   });
-  document.querySelectorAll('.section .content').forEach((section) => {
-    section.classList.add('reveal');
-    observer.observe(section);
+  document.querySelectorAll('.hero-content img, .hero-content nav, .intro-panel h1, .intro-panel p, .section .content h2, .section .content h3, .section .content p, .section .content li, .section .content img, .section .content .video-preview, .section .content .logo-row a, .site-footer > *').forEach((element) => {
+    if (element.tagName === 'P' && element.closest('li')) return;
+    if (element.tagName === 'IMG' && element.closest('.video-preview, .logo-row')) return;
+    element.classList.add('reveal');
+    observer.observe(element);
   });
   document.querySelectorAll('.title-mark.animated').forEach((title) => observer.observe(title));
 }
