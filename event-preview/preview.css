@@ -149,8 +149,9 @@ nav a { color: inherit; text-decoration-color: var(--accent); }
 .video-preview { aspect-ratio: 16 / 9; position: relative; background: #17213c; }
 .video-preview button { display: block; width: 100%; height: 100%; padding: 0; border: 0; cursor: pointer; background: none; }
 .video-preview img { width: 100%; height: 100%; object-fit: cover; }
-.play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; background: #17213cd9; border-radius: 50%; width: 54px; height: 54px; display: grid; place-items: center; padding-left: 3px; font: 24px sans-serif; }
-.video-preview button:hover .play-icon { background: var(--accent); }
+.play-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 68px; height: 48px; border-radius: 14px; background: #212121cc; display: grid; place-items: center; }
+.play-icon::before { content: ""; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 16px solid #fff; margin-left: 4px; }
+.video-preview button:hover .play-icon, .video-preview button:focus-visible .play-icon { background: #f00; }
 .video-preview iframe { width: 100%; height: 100%; border: 0; }
 
 .sponsors { padding-bottom: 20px; }
