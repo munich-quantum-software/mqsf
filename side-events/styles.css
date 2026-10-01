@@ -87,7 +87,7 @@
 .side-events-ui .empty-day p { margin-bottom: 12px; }
 .side-events-ui .text-button { border: 0; background: transparent; padding: 8px 0; color: var(--blue); text-align: left; min-height: 40px; font-size: .9375rem; font-weight: 400; text-decoration: underline; text-underline-offset: 3px; }
 .side-events-ui .calendar-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; padding: 16px 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: .8125rem; }
-.side-events-ui .page-note { color: #b4c6db; text-align: center; margin: 20px 0 0; font-size: .875rem; }
+.side-events-ui .page-note { color: #b4c6db; text-align: left; margin: 20px 0 0; font-size: .875rem; }
 .side-events-ui .organizer-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; padding: 12px 16px; border: 1px solid #c9d3e0; border-radius: 10px; background: #eef5ff; color: var(--ink); font-size: .875rem; }
 .side-events-ui .drag-hint { display: none; }
 @media (hover: hover) and (pointer: fine) {
