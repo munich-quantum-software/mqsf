@@ -1,186 +1,150 @@
 (() => {
-  const imageURL = new URL('./images/brand/grey-waves-wallpaper.png', document.currentScript.src);
-
-  // Control points follow visible intersections in the original square artwork.
-  const anchors = [
-    [0.045, 0.305], [0.150, 0.299], [0.267, 0.316], [0.401, 0.337],
-    [0.441, 0.283], [0.526, 0.275], [0.609, 0.270], [0.686, 0.276],
-    [0.754, 0.296], [0.837, 0.300], [0.924, 0.274],
-    [0.015, 0.381], [0.085, 0.421], [0.190, 0.392], [0.195, 0.346],
-    [0.310, 0.396], [0.388, 0.447], [0.403, 0.414], [0.515, 0.404],
-    [0.485, 0.447], [0.575, 0.451], [0.630, 0.430], [0.677, 0.468],
-    [0.737, 0.418], [0.795, 0.414], [0.872, 0.447], [0.953, 0.453],
-    [0.049, 0.518], [0.299, 0.455], [0.414, 0.501], [0.515, 0.499],
-    [0.637, 0.524], [0.789, 0.450], [0.890, 0.498], [0.979, 0.507],
-    [0.137, 0.602], [0.254, 0.559], [0.376, 0.530], [0.465, 0.579],
-    [0.779, 0.548], [0.909, 0.571], [0.003, 0.627], [0.176, 0.680],
-    [0.300, 0.638], [0.583, 0.668], [0.772, 0.640], [0.970, 0.662],
-    [0.075, 0.726], [0.204, 0.765], [0.364, 0.711], [0.914, 0.751],
-    [0.241, 0.817], [0.493, 0.879], [0.688, 0.812], [0.897, 0.859],
-  ];
-
   document.querySelectorAll('.wave-canvas').forEach((canvas) => {
-    const gl = canvas.getContext('webgl', { alpha: true, antialias: false, depth: false });
-    if (!gl) return;
-
+    const context = canvas.getContext('2d');
+    const layer = document.createElement('canvas');
+    const paint = layer.getContext('2d');
+    if (!context || !paint) return;
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-    let frame = 0;
-    let previousTime = 0;
-    let motionTime = 0;
-    let unavailable = false;
+    let time = 0;
+    let previous = 0;
+    let frame;
+    let width;
+    let height;
+    let side;
 
-    function showOriginal() {
-      unavailable = true;
-      cancelAnimationFrame(frame);
-      canvas.hidden = true;
-    }
-
-    canvas.addEventListener('webglcontextlost', (event) => {
-      event.preventDefault();
-      showOriginal();
-    });
-
-    async function start() {
-      const vertexSource = `
-        attribute vec2 a_uv;
-        uniform vec2 u_scale;
-        uniform vec4 u_nodes[${anchors.length}];
-        varying vec2 v_uv;
-        void main() {
-          vec2 offset = vec2(0.0);
-          float total = 0.0;
-          for (int i = 0; i < ${anchors.length}; i++) {
-            vec2 distance = (a_uv - u_nodes[i].xy) / 0.115;
-            float influence = max(0.0, 1.0 - dot(distance, distance));
-            influence *= influence;
-            offset += u_nodes[i].zw * influence;
-            total += influence;
+    // Image-guided rest positions; depth gives each point a genuine world position.
+    const rows = [
+      [[-.10,.14],[.00,.15],[.10,.16],[.21,.17],[.32,.16],[.42,.13],[.51,.12],[.61,.14],[.70,.16],[.80,.17],[.90,.16],[1,.14],[1.10,.13]],
+      [[-.10,.19],[.02,.21],[.12,.22],[.23,.23],[.34,.22],[.44,.20],[.55,.20],[.65,.21],[.75,.22],[.86,.23],[.96,.23],[1.06,.21],[1.16,.20]],
+      [[-.12,.25],[-.02,.27],[.08,.28],[.18,.29],[.28,.30],[.39,.30],[.48,.23],[.55,.214],[.62,.210],[.69,.225],[.78,.207],[.86,.213],[1.04,.29]],
+      [[-.13,.34],[-.02,.33],[.045,.305],[.15,.299],[.267,.316],[.401,.337],[.441,.283],[.526,.275],[.609,.270],[.686,.276],[.754,.296],[.837,.300],[1.02,.31]],
+      [[-.13,.46],[-.06,.43],[.015,.381],[.104,.364],[.195,.346],[.295,.361],[.403,.414],[.515,.404],[.630,.430],[.737,.418],[.795,.414],[.866,.413],[1.03,.36]],
+      [[-.18,.53],[-.05,.46],[.085,.421],[.190,.392],[.310,.396],[.388,.447],[.485,.447],[.575,.451],[.677,.468],[.789,.450],[.872,.447],[.953,.453],[1.09,.45]],
+      [[-.22,.68],[-.08,.57],[.049,.518],[.178,.480],[.299,.455],[.414,.501],[.515,.499],[.637,.524],[.779,.548],[.890,.498],[.979,.507],[1.12,.51],[1.26,.53]],
+      [[-.32,.80],[-.16,.73],[.003,.627],[.137,.602],[.254,.559],[.346,.532],[.465,.579],[.583,.668],[.772,.640],[.909,.571],[1.065,.603],[1.23,.64],[1.40,.69]],
+      [[-.42,.94],[-.24,.87],[-.07,.80],[.075,.726],[.176,.680],[.300,.638],[.364,.711],[.546,.797],[.761,.730],[.970,.662],[1.15,.74],[1.35,.78],[1.52,.84]],
+      [[-.50,1.14],[-.29,1.06],[-.08,.94],[.065,.947],[.204,.765],[.241,.817],[.493,.879],[.688,.812],[.914,.751],[1.08,.865],[1.32,.92],[1.53,1.02],[1.74,1.12]],
+      [[-.62,1.39],[-.37,1.30],[-.10,1.21],[.11,1.15],[.31,1.04],[.48,1.01],[.68,.983],[.887,.949],[1.14,1.07],[1.38,1.19],[1.62,1.24],[1.90,1.31],[2.10,1.42]],
+    ];
+    const depths = [18, 15, 12, 10, 8.5, 7, 5.8, 4.8, 3.8, 3, 2.4];
+    const blur = [9, 11, 10, 6, 2.5, .65, .7, 2.2, 5.5, 10, 14];
+    const nodes = rows.flatMap((row, r) => row.map(([x, y], c) => {
+      const z = depths[r];
+      const scale = 1.9 / z;
+      return {
+        x: (x - .5) / scale, y: .95 - (y - .11) / scale, z,
+        radius: r < 4 ? 6.5 : 1.2 + 19 / z,
+        blur: blur[r] + Math.max(0, Math.abs(x - .5) - .35) * 10,
+        alpha: r < 4 ? .34 + r * .015 : .41,
+        phase: r * 1.7 + c * 2.39996,
+      };
+    }));
+    const edges = [];
+    const columns = rows[0].length;
+    for (let r = 0; r < rows.length; r++) {
+      for (let c = 0; c < columns; c++) {
+        const i = r * columns + c;
+        if (c + 1 < columns) edges.push([i, i + 1]);
+        if (r + 1 < rows.length) {
+          edges.push([i, i + columns]);
+          if (c + 1 < columns) {
+            edges.push((r + c) % 3 === 0 ? [i + 1, i + columns] : [i, i + columns + 1]);
           }
-          vec2 edge = smoothstep(vec2(0.0), vec2(0.035), a_uv)
-                    * smoothstep(vec2(0.0), vec2(0.035), 1.0 - a_uv);
-          vec2 position = a_uv + offset / max(1.0, total) * edge.x * edge.y;
-          gl_Position = vec4((position * 2.0 - 1.0) * u_scale * vec2(1.0, -1.0), 0.0, 1.0);
-          v_uv = a_uv;
-        }`;
-      const fragmentSource = `
-        precision highp float;
-        uniform sampler2D u_image;
-        varying vec2 v_uv;
-        void main() { gl_FragColor = texture2D(u_image, v_uv); }`;
-
-      function compile(type, source) {
-        const shader = gl.createShader(type);
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-          throw new Error(gl.getShaderInfoLog(shader));
-        }
-        return shader;
-      }
-
-      const program = gl.createProgram();
-      gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexSource));
-      gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
-      gl.linkProgram(program);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
-      gl.useProgram(program);
-
-      const divisions = 96;
-      const vertices = [];
-      const indices = [];
-      for (let y = 0; y <= divisions; y++) {
-        for (let x = 0; x <= divisions; x++) vertices.push(x / divisions, y / divisions);
-      }
-      for (let y = 0; y < divisions; y++) {
-        for (let x = 0; x < divisions; x++) {
-          const a = y * (divisions + 1) + x;
-          const b = a + divisions + 1;
-          indices.push(a, b, a + 1, a + 1, b, b + 1);
         }
       }
-      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-      const uv = gl.getAttribLocation(program, 'a_uv');
-      gl.enableVertexAttribArray(uv);
-      gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, 0, 0);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
-      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-
-      const image = new Image();
-      image.crossOrigin = 'anonymous';
-      image.src = imageURL.href;
-      await image.decode();
-      if (unavailable) return;
-      gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      gl.uniform1i(gl.getUniformLocation(program, 'u_image'), 0);
-
-      const scaleUniform = gl.getUniformLocation(program, 'u_scale');
-      const nodeUniform = gl.getUniformLocation(program, 'u_nodes[0]');
-      const nodes = new Float32Array(anchors.length * 4);
-
-      function draw() {
-        if (unavailable) return;
-        canvas.hidden = reducedMotion.matches || motionTime === 0;
-        if (reducedMotion.matches) return;
-        anchors.forEach(([x, y], index) => {
-          const phase = index * 2.39996 + x * 4;
-          const frequency = 0.95 + (index % 7) * 0.065;
-          const amplitude = 0.006 + y * 0.011;
-          const ramp = Math.min(1, motionTime / 1.2);
-          nodes[index * 4] = x;
-          nodes[index * 4 + 1] = y;
-          nodes[index * 4 + 2] = Math.sin(motionTime * frequency * 0.7 + phase) * amplitude * 0.18 * ramp;
-          nodes[index * 4 + 3] = Math.sin(motionTime * frequency + phase) * amplitude * ramp;
-        });
-        gl.uniform4fv(nodeUniform, nodes);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
-      }
-
-      function resize() {
-        if (unavailable) return;
-        const width = canvas.parentElement.clientWidth;
-        const height = canvas.parentElement.clientHeight;
-        if (!width || !height) return;
-        const dpr = Math.min(devicePixelRatio || 1, 2);
-        canvas.width = Math.round(width * dpr);
-        canvas.height = Math.round(height * dpr);
-        gl.viewport(0, 0, canvas.width, canvas.height);
-        const side = Math.max(width, height);
-        gl.uniform2f(scaleUniform, side / width, side / height);
-        draw();
-      }
-
-      function animate(time) {
-        if (previousTime) motionTime += Math.min(time - previousTime, 50) / 1000;
-        previousTime = time;
-        draw();
-        frame = requestAnimationFrame(animate);
-      }
-
-      function update() {
-        if (unavailable) return;
-        cancelAnimationFrame(frame);
-        previousTime = 0;
-        draw();
-        if (!reducedMotion.matches && !document.hidden) frame = requestAnimationFrame(animate);
-      }
-
-      reducedMotion.addEventListener('change', update);
-      document.addEventListener('visibilitychange', update);
-      window.addEventListener('resize', resize, { passive: true });
-      resize();
-      update();
     }
 
-    start().catch((error) => {
-      console.error('MQSF background:', error);
-      showOriginal();
+    const blurLevels = [.6, 1.3, 2.6, 4.5, 7, 10, 14, 19];
+    const buckets = blurLevels.map(() => []);
+    const bucket = value => blurLevels.reduce((best, level, i) =>
+      Math.abs(level - value) < Math.abs(blurLevels[best] - value) ? i : best, 0);
+    edges.forEach(([a, b]) => {
+      for (let step = 0; step < 6; step++) {
+        const start = step / 6;
+        const end = (step + 1) / 6;
+        const blend = (start + end) / 2;
+        buckets[bucket(nodes[a].blur * (1 - blend) + nodes[b].blur * blend)].push({ a, b, start, end });
+      }
     });
+    nodes.forEach((node, index) => buckets[bucket(node.blur)].push({ index }));
+
+    function draw() {
+      canvas.hidden = reducedMotion.matches;
+      if (reducedMotion.matches) return;
+      const unit = side / 1000;
+      const offsetX = (width - side) / 2;
+      const offsetY = (height - side) / 2;
+      const points = nodes.map(node => {
+        const wave = .065 * Math.sin(node.x * 1.15 + node.z * .7 - time * .92)
+          + .045 * Math.sin(node.x * .7 - node.z * .9 + time * 1.18)
+          + .012 * Math.sin(time * 1.5 + node.phase);
+        const scale = 1.9 / node.z;
+        return {
+          x: offsetX + (.5 + node.x * scale) * side,
+          y: offsetY + (.11 + (.95 - node.y - wave) * scale) * side,
+        };
+      });
+      context.filter = 'none';
+      const background = context.createLinearGradient(0, 0, width * .3, height);
+      background.addColorStop(0, '#171f39');
+      background.addColorStop(.55, '#17213c');
+      background.addColorStop(1, '#18233c');
+      context.fillStyle = background;
+      context.fillRect(0, 0, width, height);
+      buckets.forEach((items, i) => {
+        paint.clearRect(0, 0, width, height);
+        paint.lineCap = 'butt';
+        items.forEach(item => {
+          if (item.index !== undefined) {
+            const node = nodes[item.index];
+            const point = points[item.index];
+            paint.fillStyle = `rgba(39, 100, 125, ${node.alpha})`;
+            paint.beginPath();
+            paint.arc(point.x, point.y, node.radius * unit, 0, Math.PI * 2);
+            paint.fill();
+          } else {
+            const a = points[item.a];
+            const b = points[item.b];
+            const nodeA = nodes[item.a];
+            const nodeB = nodes[item.b];
+            paint.strokeStyle = `rgba(39, 100, 125, ${(nodeA.alpha + nodeB.alpha) * .42})`;
+            paint.lineWidth = (1.2 + 14 / ((nodeA.z + nodeB.z) / 2)) * unit;
+            paint.beginPath();
+            paint.moveTo(a.x + (b.x - a.x) * item.start, a.y + (b.y - a.y) * item.start);
+            paint.lineTo(a.x + (b.x - a.x) * item.end, a.y + (b.y - a.y) * item.end);
+            paint.stroke();
+          }
+        });
+        context.filter = `blur(${blurLevels[i] * unit}px)`;
+        context.drawImage(layer, 0, 0);
+      });
+      context.filter = 'none';
+    }
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const ratio = Math.min(devicePixelRatio, 1.5);
+      width = canvas.width = layer.width = Math.round(rect.width * ratio);
+      height = canvas.height = layer.height = Math.round(rect.height * ratio);
+      side = Math.max(width, height);
+      draw();
+    }
+    function animate(now) {
+      time += previous ? Math.min(now - previous, 50) / 1000 : 0;
+      previous = now;
+      draw();
+      frame = requestAnimationFrame(animate);
+    }
+    function updateMotion() {
+      cancelAnimationFrame(frame);
+      previous = 0;
+      draw();
+      if (!reducedMotion.matches && !document.hidden) frame = requestAnimationFrame(animate);
+    }
+    reducedMotion.addEventListener('change', updateMotion);
+    document.addEventListener('visibilitychange', updateMotion);
+    window.addEventListener('resize', resize, { passive: true });
+    resize();
+    updateMotion();
   });
 })();
