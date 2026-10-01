@@ -14,7 +14,7 @@ body, button, input, select, textarea { margin: 0; color: var(--ink); background
 a { color: inherit; }
 .page-shell { position: relative; min-height: 100svh; overflow: clip; isolation: isolate; }
 .container { width: min(calc(100% - 5rem), var(--max-width)); margin-inline: auto; }
-.wave-background { position: fixed; z-index: 0; height: 100svh; }
+.wave-background { position: fixed; z-index: 0; height: 100dvh; }
 .masthead { position: fixed; inset: 0 0 auto; z-index: 10; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: none; min-height: 96px; padding-inline: max(2.5rem, calc((100vw - var(--max-width)) / 2)); border-bottom: 1px solid rgba(4, 10, 20, .12); background: rgba(255, 255, 255, .78); box-shadow: 0 14px 30px rgba(2, 7, 14, .12); backdrop-filter: blur(16px); }
 .wordmark { display: inline-flex; align-items: center; width: 154px; text-decoration: none; }
 .wordmark img { display: block; width: 100%; height: auto; }
