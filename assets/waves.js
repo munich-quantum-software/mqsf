@@ -26,14 +26,21 @@
     ];
     const depths = [18, 15, 12, 10, 8.5, 7, 5.8, 4.8, 3.8, 3, 2.4];
     const blur = [9, 11, 10, 6, 2.5, .65, .7, 2.2, 5.5, 10, 14];
-    const nodes = rows.flatMap((row, r) => row.map(([x, y], c) => {
+    // Keep the scattered layout identical across previews and embedded pages.
+    let seed = 20261015;
+    const random = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+    const nodes = rows.flatMap((row, r) => row.map(([x, y]) => {
+      x += (random() - .5) * .09;
+      y += (random() - .5) * .06;
       const z = depths[r];
       const scale = 1.9 / z;
       return {
         x: (x - .5) / scale, y: .95 - (y - .11) / scale, z,
         radius: (r < 4 ? 6.5 : 1.2 + 19 / z) * 1.3,
         blur: blur[r] + Math.max(0, Math.abs(x - .5) - .35) * 10,
-        phase: r * 1.7 + c * 2.39996,
       };
     }));
     const edges = [];
@@ -81,9 +88,9 @@
       const offsetX = (width - side) / 2;
       const offsetY = (height - side) / 2;
       const points = nodes.map(node => {
-        const wave = .065 * Math.sin(node.x * 1.15 + node.z * .7 - time * .92)
-          + .045 * Math.sin(node.x * .7 - node.z * .9 + time * 1.18)
-          + .012 * Math.sin(time * 1.5 + node.phase);
+        // Both harmonics travel together, carrying one continuous crest across the grid.
+        const phase = node.x * 1.45 + node.z * .38 - time * .92;
+        const wave = .105 * Math.sin(phase) + .017 * Math.sin(phase * 2);
         const scale = 1.9 / node.z;
         return {
           x: offsetX + (.5 + node.x * scale) * side,
@@ -138,7 +145,7 @@
       draw();
     }
     function animate(now) {
-      time += previous ? Math.min(now - previous, 50) / 1000 : 0;
+      time += previous ? Math.min(now - previous, 50) / 1000 * .56 : 0;
       previous = now;
       draw();
       frame = requestAnimationFrame(animate);
