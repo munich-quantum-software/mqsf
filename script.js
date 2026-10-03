@@ -35,6 +35,7 @@ const pitchPresentations = [
   "Ashutosh Mishra — ParaQeet: A quantum optimal control toolkit with simple parameter management",
   "Brad Chase, Farrokh Labib — Clifft: A Simulator for Early Fault-Tolerant Quantum Computing",
   "Domenik Eichhorn, Nick Poser, Maximilian Schweikart, Piotr Malkowski, Luke Southall — Hybrid Quantum / Classical Problem Solving with the ProvideQ Toolbox",
+  "Milad Ghadimi — QuDecide: A Framework for Benchmarking Quantum Optimization Against Classical Baselines",
   "Edward Stow, Adam Melvin, Adrien Suau, Luca Huelle, Daoyi Chen, Victoria Holodovsky, Davide Sonno, Ryan Dancy, Kiran Amin, Zalan Nemeth, and Sara Metwalli — Deltakit-compile featuring circuit builder: an MLIR-based framework for designing quantum error correcting codes.",
   "Florian Krötz — Paulib – A High-Performance Framework for Pauli Algebra",
   "Ralf Ramsauer, Lukas Landgraf, Wolfgang Mauerer — QPX: An Open Research Platform for Quantum Control Architectures",
