@@ -2,9 +2,8 @@ const pitchPresentations = [
   "Raphael Seidel — DetectorExperiment: Streamlined QEC on IQM Hardware with a Built-In Path to Real-Time Decoding",
   "Muhammad Osama and Alfons Laarman — QuaSARQ: A GPU-Accelerated Stabilizer Circuit Simulator for QEC",
   "Serban Cercelescu — Qubitserf",
-  "Muhammad Arslan Ansari, Salvatore Zammuto, Martin Schulz — Re-using Runtime Quantum Circuit Transpilation in ADAPT-VQE Workflows",
   "Mathys Rennela — Catching Bugs in Detector Error Models (Before Your Decoder Fails)",
-  "Michele Faucci Giannelli — The Chalmers Calibration toolkit for superconducting quantum processors",
+  "Joel Arvid Sandås, Matteo Robbiati, Axel Andersson — The Chalmers Calibration toolkit for superconducting quantum processors",
   "Dimitrios Bantounas, Michael Fromm, Alexander Gresch, Ioannis Kizilis, Soronzonbold Otgonbaatar — hardware-native compilation for trapped-ion quantum computing",
   "Oliver Denninger — The FullStaQD Reference Architecture for the Quantum Software Stack",
   "Cherilyn Christen, Nathaniel Pacey — A Framework for Noisy Gate Execution simulating Quantum Circuits",
@@ -49,7 +48,7 @@ const pitchPresentations = [
 ];
 
 const pitchCards = document.querySelectorAll(".pitch-card");
-const pitchSessionStarts = [0, 11, 23, 35];
+const pitchSessionStarts = [0, 10, 22, 34];
 let nextPitchNumber = 1;
 
 pitchCards.forEach((card) => {
