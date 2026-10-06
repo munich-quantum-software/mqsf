@@ -1,4 +1,4 @@
-import conference from "../side-events/conference.json" with { type: "json" };
+import conference from "../2026/meetups/conference.json" with { type: "json" };
 import { notifyChanges } from "./notifications.mjs";
 import { createHash, timingSafeEqual } from "node:crypto";
 

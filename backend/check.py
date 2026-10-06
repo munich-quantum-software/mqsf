@@ -101,13 +101,19 @@ with TemporaryDirectory() as directory:
     assert request(app, "GET", "/mqsf/.data/events.sqlite3")[0] == 404
     assert request(app, "GET", "/mqsf")[0] == 308
     for mount in ["/mqsf", "/side-events"]:
-        assert b'url=../#side-events' in request(app, "GET", mount + "/")[1]
+        assert b'../2026/program/#side-events' in request(app, "GET", mount + "/")[1]
         assert request(app, "GET", mount + "/app.mjs")[0] == 200
         assert request(app, "GET", mount + "/conference.json")[0] == 200
         assert request(app, "GET", mount + "/api/meetups")[0] == 200
-    assert b'href="#side-events"' in request(app, "GET", "/")[1]
-    for resource in ["/styles.css", "/script.js", "/assets/images/brand/favicon.png", "/assets/images/brand/mqsf-logo.svg"]:
+    assert b'data-program="2026/program/"' in request(app, "GET", "/")[1]
+    assert b'href="#side-events"' in request(app, "GET", "/2026/program/")[1]
+    for resource in ["/2026/", "/2026/event.css", "/2026/program/styles.css", "/2026/program/script.js", "/2026/meetups/app.mjs", "/2026/meetups/conference.json", "/background/", "/background-preview/", "/event-preview/", "/assets/redirect.js", "/assets/images/brand/favicon.png", "/assets/images/brand/mqsf-logo.svg"]:
         assert request(app, "GET", resource)[0] == 200
+    assert request(app, "GET", "/2026/program")[0] == 308
+    assert request(app, "GET", "/2026/meetups/api/meetups")[0] == 200
+    assert request(app, "GET", "/2026/../backend/server.py")[0] == 404
+    assert request(app, "GET", "/2026/missing.html")[0] == 404
+    assert b"frame-ancestors 'self'" in request(app, "GET", "/background/")[2]["Content-Security-Policy"].encode()
     assert request(app, "GET", "/assets/../backend/server.py")[0] == 404
     assert request(app, "OPTIONS", origin="https://munich-quantum-software.github.io")[0] == 204
     legacy_db = Path(directory) / "legacy.sqlite3"
