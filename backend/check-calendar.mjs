@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { runInNewContext } from "node:vm";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { layoutEvents, minutes, clock, selectionRange, maxParallelSessions } from "../2026/meetups/calendar.mjs";
 
@@ -25,8 +26,17 @@ function checkLinks(directory) {
 }
 for (const directory of ["2026/", "assets/", "background/"]) checkLinks(directory);
 const home = readFileSync(new URL("index.html", root), "utf8");
-assert.match(home, /http-equiv="refresh" content="0; url=2026\/"/);
+assert.match(home, /<noscript><meta http-equiv="refresh" content="0; url=2026\/"><\/noscript>/);
 assert(existsSync(new URL("2026/index.html", root)));
+const redirectScript = home.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+assert(redirectScript, "The current-edition redirect preserves URL anchors");
+for (const base of ["https://munich-quantum-software.github.io/mqsf/", "https://munich-quantum-software.github.io/mqsf/previews/pr-5/", "http://127.0.0.1:8030/"]) {
+  for (const hash of ["", "#registration", "#program", "#events", "#sponsors"]) {
+    let destination;
+    runInNewContext(redirectScript, { location: { hash, replace: target => { destination = new URL(target, base).href; } } });
+    assert.equal(destination, `${base}2026/${hash}`, "Preserve anchors and the deployment prefix without adding a history entry");
+  }
+}
 
 const input = [
   { id: "long", start: "09:00", end: "12:00" },
