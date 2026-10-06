@@ -19,10 +19,8 @@ backend/              Local calendar preview and tests
 cloudflare/           Production calendar Worker, database migrations, and tests
 ```
 
-The root forwards to the current edition. Old root fragments (for example
-`#day-2`, `#side-events`, and `#organizer`) forward to the 2026 program.
-`event-preview/`, `side-events/`, and `background-preview/` are retained as
-compatibility entry points, not places to edit content.
+The root opens the current edition. All content uses year-specific URLs; there
+are no legacy page aliases.
 
 ## Local development
 
@@ -44,8 +42,8 @@ npm test
 uv run --no-project python backend/check.py
 ```
 
-These checks cover the calendar API, layout, moved page assets, and legacy
-redirects. No tests write to the production database.
+These checks cover the calendar API, layout, moved page assets, and the current-edition
+entry point. No tests write to the production database.
 
 ## Editing and future editions
 
@@ -55,8 +53,7 @@ redirects. No tests write to the production database.
   Fonts retain their license in `assets/fonts/OFL.txt`.
 - For a new edition, create its year directory from the existing pages, update
   content, dates, images, registration links, and calendar configuration, then
-  change the root's event link to that edition. Keep the root's legacy program
-  fragment target on 2026 so published program links do not silently change year.
+  change the root's event link and refresh destination to that edition.
 - The calendar backend is still **2026-specific**. A future edition requires
   its own Worker/database and client API configuration. Do not repoint the 2026
   client or reset its database. See [the production calendar guide](cloudflare/README.md).

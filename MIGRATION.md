@@ -1,59 +1,63 @@
 # Year-based site migration
 
-## This PR
+## Breaking URL changes
 
-Review and merge without renaming the repository. The published base stays
-`https://munich-quantum-software.github.io/mqsf-2026-program/`.
+This PR intentionally removes old page aliases. After merging:
 
-| Entry point relative to the published base | Behavior after merging |
+| Content | Path relative to the published repository base |
 | --- | --- |
-| `/` or `/index.html` without a fragment | Opens the 2026 event landing page |
-| `/#day-1`, `/#day-2`, `/#side-events`, `/#organizer`, `/#sponsors` | Opens the same section in `/2026/program/` |
-| `/event-preview/` | Opens `/2026/`, preserving fragment and query |
-| `/side-events/` | Opens `/2026/program/#side-events` |
-| `/background-preview/` | Opens `/background/` |
+| Current edition | `/` (opens `/2026/`) |
+| 2026 event page | `/2026/` |
+| 2026 program | `/2026/program/` |
+| Meet-ups | `/2026/program/#side-events` |
+| Organizer sign-in | `/2026/program/#organizer` |
+| Standalone animation | `/background/` |
+| Event poster | `/2026/materials/mqsf_2026_save_the_date-2whd.pdf` |
 
-The old bare program URL now opens the event landing page; its **full program**
-link leads to `/2026/program/`. Redirect pages use JavaScript to retain fragments
-and query parameters, with ordinary links available when JavaScript is disabled.
-They are not HTTP 301/302 redirects. Old direct asset/download URLs are not
-redirected; update any externally shared downloads to `/2026/materials/`.
+`/event-preview/`, `/side-events/`, and `/background-preview/` are removed.
+Old root fragments such as `/#day-2` no longer route to the program.
+Previously shared direct asset URLs also change. Update published links and
+bookmarks; no compatibility site or redirects are included.
 
-The existing Squarespace `/mqsf` mapping to `/event-preview/` continues to work.
-After verifying the deployment, it can point directly to the repository root:
+## Squarespace cutover
+
+The existing mapping to `/event-preview/` will stop working after deployment.
+Coordinate the merge with this replacement mapping:
 
 ```text
 /mqsf -> https://munich-quantum-software.github.io/mqsf-2026-program/ 302
 ```
 
-The database, Worker name, production API URL, secrets, and permissions are
-unchanged. The Worker imports conference settings from their new location;
-subsequent deployments use the same existing database. No data migration or
-Worker redeploy is required for this path-only frontend change.
+The root opens the current edition without JavaScript. Future editions only
+require changing the root refresh destination and link, not Squarespace.
 
-## Optional later rename to `mqsf`
+## Optional repository rename
 
-GitHub repository redirects do **not** redirect GitHub Pages URLs. Do not rename
-until redirects for already-shared website URLs are ready.
+This PR does not rename the repository. If it is later renamed to `mqsf`,
+verify GitHub Pages at the new address and change the Squarespace mapping to:
 
-1. Rename the repository, update the local Git remote, and verify GitHub Pages
-   at `https://munich-quantum-software.github.io/mqsf/`.
-2. Provide a small legacy Pages site at the old repository name. Its old root
-   must forward to the **2026 program**, while its `event-preview/`,
-   `side-events/`, and `background-preview/` paths forward to their respective
-   new locations. Preserve fragments and queries. Do not clone the full site.
-3. Update the Squarespace URL mapping only after the new destination works:
+```text
+/mqsf -> https://munich-quantum-software.github.io/mqsf/ 302
+```
 
-   ```text
-   /mqsf -> https://munich-quantum-software.github.io/mqsf/ 302
-   ```
+Update the local Git remote and any shared GitHub Pages links as well.
+GitHub repository redirects do **not** redirect GitHub Pages URLs; without a
+legacy site, all old repository-based website URLs will stop working.
 
-4. Verify program day links, meet-ups, organizer sign-in, background, images,
-   videos, and downloadable materials on desktop and mobile.
+## Calendar and validation
 
-The GitHub Pages origin stays `https://munich-quantum-software.github.io`, so a
-repository-path rename does not require a calendar CORS change. Moving to a
-custom domain would require reviewing the allowed origins separately.
+The production database, Worker name, API URL, secrets, and permissions remain
+unchanged. Existing API compatibility is outside this website-route cleanup.
+The Worker imports its unchanged 2026 settings from the new location; no data
+migration or Worker redeploy is required for this frontend reorganization.
+
+A repository rename does not change the GitHub Pages origin, so it does not
+require a calendar CORS change. A custom domain would require reviewing allowed
+origins separately.
+
+Before cutover, verify the event page, program, meet-ups, organizer sign-in,
+animation, images, videos, and downloads. The PR itself neither merges nor
+changes Squarespace settings.
 
 References: [GitHub repository renames](https://docs.github.com/en/repositories/creating-and-managing-repositories/renaming-a-repository)
 and [Squarespace URL mappings](https://support.squarespace.com/hc/en-us/articles/205815308-URL-mappings).

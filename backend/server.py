@@ -161,40 +161,23 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
             return [body]
 
         try:
-            # Keep legacy calendar API mounts alongside the year-specific pages.
             path = environ.get("PATH_INFO", "/")
-            calendar_path = False
-            for prefix in ("/mqsf", "/side-events", "/2026/meetups"):
-                if path == prefix:
-                    return reply(308, b"", extra=[("Location", path + "/")])
-                if path.startswith(prefix + "/"):
-                    path = path[len(prefix):]
-                    calendar_path = True
-                    break
+            if path.startswith("/2026/meetups/api/"):
+                path = path.removeprefix("/2026/meetups")
             method = environ["REQUEST_METHOD"]
             match = re.fullmatch(r"/api/(?:meetups|events)(?:/([a-f0-9-]{36}))?", path)
             login = path == "/api/organizer"
             if not match and not login:
                 filename = "index.html" if path == "/" else path.lstrip("/")
-                public = PUBLIC if calendar_path else ROOT
-                allowed = filename in {
-                    "index.html", "styles.css", "app.mjs", "calendar.mjs", "config.js",
-                    "conference.json"
-                } if calendar_path else filename in {"index.html", "styles.css", "script.js"}
-                asset = (public / filename).resolve()
-                if calendar_path and filename == "index.html":
-                    if prefix == "/2026/meetups":
-                        return reply(308, b"", extra=[("Location", "../program/#side-events")])
-                    asset = ROOT / "side-events/index.html"
-                if not calendar_path:
-                    allowed = filename == "index.html" or any(
-                        asset.is_relative_to(ROOT / directory)
-                        for directory in ("2026", "assets", "background", "background-preview", "event-preview")
-                    )
-                    if allowed and asset.is_dir():
-                        if not path.endswith("/"):
-                            return reply(308, b"", extra=[("Location", path + "/")])
-                        asset = asset / "index.html"
+                asset = (ROOT / filename).resolve()
+                allowed = filename == "index.html" or any(
+                    asset.is_relative_to(ROOT / directory)
+                    for directory in ("2026", "assets", "background")
+                )
+                if allowed and asset.is_dir():
+                    if not path.endswith("/"):
+                        return reply(308, b"", extra=[("Location", path + "/")])
+                    asset = asset / "index.html"
                 allowed = allowed and asset.is_file()
                 if method != "GET" or not allowed:
                     raise RequestError(404, "Not found.")
@@ -294,6 +277,6 @@ if __name__ == "__main__":
     if options.seed_examples:
         print("Example seeding completed. Existing calendars are left unchanged.", flush=True)
         raise SystemExit(0)
-    print(f"Calendar: http://127.0.0.1:{options.port}/mqsf/", flush=True)
+    print(f"Calendar: http://127.0.0.1:{options.port}/2026/program/#side-events", flush=True)
     with make_server("127.0.0.1", options.port, local_app, handler_class=QuietHandler) as server:
         server.serve_forever()

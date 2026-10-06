@@ -20,7 +20,7 @@ uv run --no-project python backend/server.py --demo --port 8030
 ```
 
 Open <http://127.0.0.1:8030/2026/program/> for the main program and follow **Meet-Ups** to the calendar.
-The calendar's direct link is <http://127.0.0.1:8030/2026/program/#side-events>; the older `/mqsf/` and `/side-events/` links redirect there.
+The calendar's direct link is <http://127.0.0.1:8030/2026/program/#side-events>.
 The labelled sample events are kept in `.data/demo.sqlite3`.
 Stop the server with Ctrl+C. Without `--demo`, the app uses a separate, initially empty `.data/events.sqlite3`.
 The local development server binds only to this computer. Use a production WSGI server for public hosting.

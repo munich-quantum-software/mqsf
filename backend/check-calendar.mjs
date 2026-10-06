@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
-import { runInNewContext } from "node:vm";
 import { layoutEvents, minutes, clock, selectionRange, maxParallelSessions } from "../2026/meetups/calendar.mjs";
 
 // Check deployed relative links, including GitHub Pages' repository prefix.
@@ -24,32 +23,10 @@ function checkLinks(directory) {
     }
   }
 }
-for (const directory of ["2026/", "assets/", "background/", "event-preview/", "side-events/"]) checkLinks(directory);
-
-const redirect = readFileSync(new URL("assets/redirect.js", root), "utf8");
-for (const [path, file, expected] of [
-  ["/repo/", "index.html", "/repo/2026/"],
-  ["/repo/#day-2", "index.html", "/repo/2026/program/#day-2"],
-  ["/repo/index.html?test=1#organizer", "index.html", "/repo/2026/program/?test=1#organizer"],
-  ["/repo/event-preview/#sponsors", "event-preview/index.html", "/repo/2026/#sponsors"],
-  ["/repo/side-events/", "side-events/index.html", "/repo/2026/program/#side-events"],
-  ["/repo/background-preview/", "background-preview/index.html", "/repo/background/"],
-]) {
-  const html = readFileSync(new URL(file, root), "utf8");
-  const link = html.match(/<a\b[^>]*\bdata-redirect[^>]*>/)[0];
-  const target = link.match(/href="([^"]+)"/)[1];
-  const program = link.match(/data-program="([^"]+)"/)?.[1];
-  const script = html.match(/<script src="([^"]+)"/)[1];
-  assert.equal(new URL(script, new URL(file, root)).href, new URL("assets/redirect.js", root).href);
-  const location = new URL(path, "https://example.test");
-  let result;
-  location.replace = value => { result = value; };
-  runInNewContext(redirect, {
-    URL, location,
-    document: { querySelector: () => ({ href: new URL(target, location).href, dataset: { program } }) },
-  });
-  assert.equal(result, `https://example.test${expected}`);
-}
+for (const directory of ["2026/", "assets/", "background/"]) checkLinks(directory);
+const home = readFileSync(new URL("index.html", root), "utf8");
+assert.match(home, /http-equiv="refresh" content="0; url=2026\/"/);
+assert(existsSync(new URL("2026/index.html", root)));
 
 const input = [
   { id: "long", start: "09:00", end: "12:00" },
