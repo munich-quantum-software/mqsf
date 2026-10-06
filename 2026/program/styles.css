@@ -19,9 +19,9 @@ a { color: inherit; }
 .page-shell { position: relative; min-height: 100svh; overflow: clip; isolation: isolate; }
 .container { width: min(calc(100% - 5rem), var(--max-width)); margin-inline: auto; }
 .wave-background { position: fixed; z-index: 0; height: 100dvh; }
-.masthead { position: fixed; inset: 0 0 auto; z-index: 10; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: none; min-height: 120px; padding-inline: max(2.5rem, calc((100vw - var(--max-width)) / 2)); border-bottom: 1px solid rgba(4, 10, 20, .12); background: #fff; box-shadow: 0 14px 30px rgba(2, 7, 14, .12); backdrop-filter: blur(16px); }
+.masthead { position: fixed; inset: 0 0 auto; z-index: 10; display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: none; min-height: 120px; padding-inline: max(2.5rem, calc((100vw - var(--max-width)) / 2)); border-bottom: 1px solid rgba(4, 10, 20, .12); background: rgba(255, 255, 255, .94); box-shadow: 0 14px 30px rgba(2, 7, 14, .12); backdrop-filter: blur(16px); }
 .wordmark { display: inline-flex; align-items: center; width: 210px; text-decoration: none; }
-.wordmark img { display: block; width: 100%; height: auto; }
+.wordmark img { display: block; width: 100%; height: auto; transform: scale(1.1); transform-origin: left center; }
 .masthead-actions { display: flex; align-items: center; gap: .75rem; }
 .event-meta { margin: 0; color: #425066; font-size: var(--font-small); letter-spacing: .12em; text-transform: uppercase; }
 .back-link { padding: .55rem .8rem; border: 1px solid rgba(0, 111, 183, .45); border-radius: 3px; color: #006fb7; font-size: var(--font-small); letter-spacing: .08em; text-decoration: none; text-transform: uppercase; transition: color .2s ease, background .2s ease; }
