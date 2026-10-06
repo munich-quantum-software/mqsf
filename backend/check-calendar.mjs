@@ -28,6 +28,14 @@ const home = readFileSync(new URL("index.html", root), "utf8");
 assert.match(home, /http-equiv="refresh" content="0; url=2026\/"/);
 assert(existsSync(new URL("2026/index.html", root)));
 
+const programStyles = readFileSync(new URL("2026/program/styles.css", root), "utf8");
+const meetupStyles = readFileSync(new URL("2026/meetups/styles.css", root), "utf8");
+const fontSizes = [...`${programStyles}\n${meetupStyles}`.matchAll(/font-size:\s*([^;]+);/g)].map(match => match[1]);
+assert.deepEqual([...new Set(fontSizes)].sort(), ["var(--font-body)", "var(--font-heading)", "var(--font-small)"], "Program and meet-ups share only three font sizes");
+for (const [name, size] of [["small", ".875rem"], ["body", "1rem"], ["heading", "1.75rem"]]) {
+  assert(programStyles.includes(`--font-${name}: ${size};`), `Define the ${name} type size`);
+}
+
 const input = [
   { id: "long", start: "09:00", end: "12:00" },
   { id: "a", start: "09:30", end: "10:30" },
