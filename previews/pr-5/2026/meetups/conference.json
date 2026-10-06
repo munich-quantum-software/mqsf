@@ -1,0 +1,10 @@
+{
+  "days": [
+    { "date": "2026-10-14", "start": "08:00", "end": null },
+    { "date": "2026-10-15", "start": "08:00", "end": null }
+  ],
+  "timezone": "Europe/Berlin",
+  "viewStart": "08:00",
+  "viewEnd": "20:00",
+  "hoursNote": "Both days: registration from 08:00 · Talks 09:00–17:55 · Networking from 18:00, open end."
+}
