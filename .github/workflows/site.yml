@@ -1,0 +1,142 @@
+name: Website checks and previews
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: npm test
+      - run: uv run --no-project python backend/check.py
+      - name: Package public files
+        env:
+          PREVIEW: ${{ github.event_name == 'pull_request' }}
+        run: |
+          if [ "$PREVIEW" = true ]; then
+            node .github/scripts/package-site.mjs "$RUNNER_TEMP/site" --preview
+          else
+            node .github/scripts/package-site.mjs "$RUNNER_TEMP/site"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: website
+          path: ${{ runner.temp }}/site
+          include-hidden-files: true
+          retention-days: 7
+
+  publish:
+    needs: checks
+    if: >-
+      always() && !cancelled() && vars.ENABLE_SITE_PREVIEWS == 'true' &&
+      (needs.checks.result == 'success' || github.event.action == 'closed') &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: mqsf-pages-publishing
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+      pull-requests: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Check current revision and choose destination
+        id: destination
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const repo = context.repo;
+            let mode = 'production', folder = '.';
+            if (context.eventName === 'pull_request') {
+              const { data: pr } = await github.rest.pulls.get({ ...repo, pull_number: context.issue.number });
+              if (pr.state === 'closed') mode = 'remove';
+              else if (context.payload.action === 'closed' || pr.head.sha !== context.payload.pull_request.head.sha) mode = 'skip';
+              else mode = 'preview';
+              folder = `previews/pr-${pr.number}`;
+              try { await github.rest.repos.getBranch({ ...repo, branch: 'gh-pages' }); }
+              catch (error) { if (error.status === 404) mode = 'skip'; else throw error; }
+            } else {
+              const { data: branch } = await github.rest.repos.getBranch({ ...repo, branch: 'main' });
+              if (context.sha !== branch.commit.sha) mode = 'skip';
+            }
+            core.setOutput('mode', mode);
+            core.setOutput('folder', folder);
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: steps.destination.outputs.mode != 'skip'
+        with:
+          ref: main
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        if: steps.destination.outputs.mode == 'production' || steps.destination.outputs.mode == 'preview'
+        with:
+          name: website
+          path: ${{ runner.temp }}/website
+      - name: Empty source for closed preview
+        if: steps.destination.outputs.mode == 'remove'
+        run: mkdir "$RUNNER_TEMP/website"
+      - name: Update only this site directory
+        if: steps.destination.outputs.mode != 'skip'
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # v4
+        with:
+          branch: gh-pages
+          folder: ${{ runner.temp }}/website
+          target-folder: ${{ steps.destination.outputs.folder }}
+          clean: true
+          clean-exclude: |
+            previews
+            previews/**
+          force: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: steps.destination.outputs.mode != 'skip'
+        with:
+          ref: gh-pages
+          path: published-site
+          persist-credentials: false
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        if: steps.destination.outputs.mode != 'skip'
+        with:
+          path: published-site
+      - name: Publish combined site to Pages
+        id: deploy
+        if: steps.destination.outputs.mode != 'skip'
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+      - name: Update preview comment
+        if: github.event_name == 'pull_request' && steps.destination.outputs.mode != 'skip'
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          MODE: ${{ steps.destination.outputs.mode }}
+          PAGE_URL: ${{ steps.deploy.outputs.page_url }}
+        with:
+          script: |
+            const marker = '<!-- mqsf-preview -->';
+            const url = `${process.env.PAGE_URL.replace(/\/$/, '')}/previews/pr-${context.issue.number}/`;
+            const body = `${marker}\n${process.env.MODE === 'remove' ? 'Preview removed because this PR is closed.' : `Preview: ${url}\n\nRead-only calendar; no production meet-up data. Updated for ${context.payload.pull_request.head.sha}.`}`;
+            const params = { ...context.repo, issue_number: context.issue.number };
+            const comments = await github.paginate(github.rest.issues.listComments, params);
+            const existing = comments.find(comment => comment.user.type === 'Bot' && comment.body.includes(marker));
+            if (existing) await github.rest.issues.updateComment({ ...context.repo, comment_id: existing.id, body });
+            else await github.rest.issues.createComment({ ...params, body });

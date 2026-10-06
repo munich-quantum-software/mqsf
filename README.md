@@ -45,6 +45,10 @@ uv run --no-project python backend/check.py
 These checks cover the calendar API, layout, moved page assets, and the current-edition
 entry point. No tests write to the production database.
 
+GitHub Actions also runs these checks for PRs and `main`. See
+[PR preview setup](.github/PREVIEWS.md) for the one-time Pages configuration,
+automatic preview links, and cleanup. Publishing is disabled until explicitly enabled.
+
 ## Editing and future editions
 
 - Update speaker details in `2026/program/index.html` and pitches in

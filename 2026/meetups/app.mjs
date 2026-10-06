@@ -20,6 +20,10 @@ function element(tag, className, text) {
 }
 
 async function api(path = "/meetups", options = {}, key = options.method ? organizerKey : "") {
+  if (window.MQSF_PREVIEW) {
+    if (options.method) throw new Error("This PR preview is read-only. Use the local demo to test editing.");
+    return { events: [], demo: true };
+  }
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 15000);
   try {
     const response = await fetch(`${apiBase}${path}`, {
