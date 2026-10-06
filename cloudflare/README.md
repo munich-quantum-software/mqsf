@@ -24,7 +24,7 @@ npm run dev:api
 ```
 
 Tests use an isolated, temporary D1 database. The existing Python preview remains available with
-`python3 backend/server.py --demo --port 8030`; it uses its own local sample database.
+`uv run --no-project python backend/server.py --demo --port 8030`; it uses its own local sample database.
 
 ## Deploy
 
@@ -38,7 +38,7 @@ Tests use an isolated, temporary D1 database. The existing Python preview remain
    npm run deploy:api
    ```
 
-4. Set the published API URL in `side-events/config.js`. Local previews should continue using their local API.
+4. Set the published API URL in `2026/meetups/config.js`. Local previews should continue using their local API.
 5. Push the website to the repository's `main` branch to publish it with GitHub Pages.
 
 Migrations run once. The example titles are marked `(example)`; they are editable placeholders.
@@ -52,7 +52,7 @@ For migration 0005, apply the migration first, then deploy the Worker and fronte
 **Exception for migration 0003:** back up first, deploy the new Worker **before** applying the migration, then publish the form.
 The older Worker returned `SELECT *`, so it must be replaced before private columns exist. Reads continue to work;
 writes may return a temporary 503 until migration 0003 finishes. Never roll back to the old `SELECT *` Worker after this migration.
-Conference dates and hours are bundled from `side-events/conference.json`, so changes to that file need a Worker redeploy.
+Conference dates and hours are bundled from `2026/meetups/conference.json`, so changes to that file need a Worker redeploy.
 
 ## Backups
 

@@ -15,7 +15,7 @@ import sqlite3
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC = ROOT / "side-events"
+PUBLIC = ROOT / "2026/meetups"
 FIELDS = ("date", "start", "end", "title", "description", "audience", "organizers")
 PUBLIC_COLUMNS = ", ".join((*FIELDS, "id", "version", "updated_at", "table_number"))
 
@@ -161,33 +161,28 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
             return [body]
 
         try:
-            # Serve the main program at root and the calendar at either supported subpath.
             path = environ.get("PATH_INFO", "/")
-            calendar_path = False
-            for prefix in ("/mqsf", "/side-events"):
-                if path == prefix:
-                    return reply(308, b"", extra=[("Location", path + "/")])
-                if path.startswith(prefix + "/"):
-                    path = path[len(prefix):]
-                    calendar_path = True
-                    break
+            if path.startswith("/2026/meetups/api/"):
+                path = path.removeprefix("/2026/meetups")
             method = environ["REQUEST_METHOD"]
             match = re.fullmatch(r"/api/(?:meetups|events)(?:/([a-f0-9-]{36}))?", path)
             login = path == "/api/organizer"
             if not match and not login:
                 filename = "index.html" if path == "/" else path.lstrip("/")
-                public = PUBLIC if calendar_path else ROOT
-                allowed = filename in {
-                    "index.html", "styles.css", "app.mjs", "calendar.mjs", "config.js",
-                    "conference.json"
-                } if calendar_path else filename in {"index.html", "styles.css", "script.js"}
-                asset = (public / filename).resolve()
-                if not calendar_path and filename.startswith("assets/"):
-                    allowed = asset.is_relative_to(ROOT / "assets") and asset.is_file()
+                asset = (ROOT / filename).resolve()
+                allowed = filename == "index.html" or any(
+                    asset.is_relative_to(ROOT / directory)
+                    for directory in ("2026", "assets", "background")
+                )
+                if allowed and asset.is_dir():
+                    if not path.endswith("/"):
+                        return reply(308, b"", extra=[("Location", path + "/")])
+                    asset = asset / "index.html"
+                allowed = allowed and asset.is_file()
                 if method != "GET" or not allowed:
                     raise RequestError(404, "Not found.")
-                mime = "text/javascript" if filename.endswith(".mjs") else mimetypes.guess_type(filename)[0]
-                policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+                mime = "text/javascript" if asset.suffix == ".mjs" else mimetypes.guess_type(str(asset))[0]
+                policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-src 'self' https://www.youtube-nocookie.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
                 return reply(200, asset.read_bytes(), mime or "application/octet-stream", [("Content-Security-Policy", policy)])
             if origin and not permitted_origin:
                 raise RequestError(403, "This website is not configured to edit the calendar.")
@@ -282,6 +277,6 @@ if __name__ == "__main__":
     if options.seed_examples:
         print("Example seeding completed. Existing calendars are left unchanged.", flush=True)
         raise SystemExit(0)
-    print(f"Calendar: http://127.0.0.1:{options.port}/mqsf/", flush=True)
+    print(f"Calendar: http://127.0.0.1:{options.port}/2026/program/#side-events", flush=True)
     with make_server("127.0.0.1", options.port, local_app, handler_class=QuietHandler) as server:
         server.serve_forever()

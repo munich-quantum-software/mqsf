@@ -1,5 +1,32 @@
 import assert from "node:assert/strict";
-import { layoutEvents, minutes, clock, selectionRange, maxParallelSessions } from "../side-events/calendar.mjs";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { layoutEvents, minutes, clock, selectionRange, maxParallelSessions } from "../2026/meetups/calendar.mjs";
+
+// Check deployed relative links, including GitHub Pages' repository prefix.
+const root = new URL("../", import.meta.url);
+function checkLinks(directory) {
+  for (const entry of readdirSync(new URL(directory, root), { withFileTypes: true })) {
+    const path = `${directory}${entry.name}`;
+    if (entry.isDirectory()) {
+      checkLinks(`${path}/`);
+    } else if (/\.(html|css)$/.test(path)) {
+      const source = readFileSync(new URL(path, root), "utf8");
+      for (const match of source.matchAll(/(?:src|href)="([^"]+)"|url\(['"]?([^)'"\s]+)/g)) {
+        const reference = match[1] || match[2];
+        if (/^(?:https?:|data:|mailto:|#)/.test(reference)) continue;
+        const url = new URL(reference, new URL(path, root));
+        url.search = "";
+        url.hash = "";
+        assert(existsSync(url), `${path}: missing ${reference}`);
+        if (statSync(url).isDirectory()) assert(existsSync(new URL("index.html", url)), `${path}: missing index for ${reference}`);
+      }
+    }
+  }
+}
+for (const directory of ["2026/", "assets/", "background/"]) checkLinks(directory);
+const home = readFileSync(new URL("index.html", root), "utf8");
+assert.match(home, /http-equiv="refresh" content="0; url=2026\/"/);
+assert(existsSync(new URL("2026/index.html", root)));
 
 const input = [
   { id: "long", start: "09:00", end: "12:00" },

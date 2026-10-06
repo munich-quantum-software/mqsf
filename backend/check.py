@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 from server import create_app, validate_event, RequestError
 
 
-def request(app, method="GET", path="/mqsf/api/meetups", data=None, origin=None, content_type="application/json", authorization=None):
+def request(app, method="GET", path="/2026/meetups/api/meetups", data=None, origin=None, content_type="application/json", authorization=None):
     payload = json.dumps(data).encode() if data is not None else b""
     environ = {"REQUEST_METHOD": method, "PATH_INFO": path, "CONTENT_TYPE": content_type,
                "CONTENT_LENGTH": str(len(payload)), "wsgi.input": BytesIO(payload),
@@ -44,10 +44,10 @@ with TemporaryDirectory() as directory:
     second_client = create_app(database)
     assert request(second_client)[1]["events"] == [first], "Edits must persist across clients and restarts"
     # Already-open clients use the same records through the old route.
-    legacy_path = "/mqsf/api/events/" + first["id"]
-    assert request(app, "GET", "/mqsf/api/events")[1]["events"] == [first]
-    assert request(app, "POST", "/mqsf/api/events", data={**event, "start": "10:30", "end": "11:30"})[0] == 201, "Overlaps are allowed"
-    path = "/mqsf/api/meetups/" + first["id"]
+    legacy_path = "/2026/meetups/api/events/" + first["id"]
+    assert request(app, "GET", "/2026/meetups/api/events")[1]["events"] == [first]
+    assert request(app, "POST", "/2026/meetups/api/events", data={**event, "start": "10:30", "end": "11:30"})[0] == 201, "Overlaps are allowed"
+    path = "/2026/meetups/api/meetups/" + first["id"]
     for route in [path, legacy_path]:
         for method in ["PUT", "DELETE"]:
             for email in [None, "", 123, "invalid", "a@example.test\r\nBcc:x", "wrong@example.test", "x' OR 1=1 --@example.test"]:
@@ -95,19 +95,21 @@ with TemporaryDirectory() as directory:
         assert json.loads(rows[-1][1])["contact_email"] == event["contact_email"]
         assert rows[-1][2] is None
     assert "contact_email" not in json.dumps(request(app)[1])
-    assert request(app, "GET", "/mqsf/api/history")[0] == 404
+    assert request(app, "GET", "/2026/meetups/api/history")[0] == 404
     assert request(app, "PUT", path, {**latest, "contact_email": event["contact_email"]})[0] == 404
-    assert request(app, "GET", "/mqsf/../backend/server.py")[0] == 404
-    assert request(app, "GET", "/mqsf/.data/events.sqlite3")[0] == 404
-    assert request(app, "GET", "/mqsf")[0] == 308
-    for mount in ["/mqsf", "/side-events"]:
-        assert b'url=../#side-events' in request(app, "GET", mount + "/")[1]
-        assert request(app, "GET", mount + "/app.mjs")[0] == 200
-        assert request(app, "GET", mount + "/conference.json")[0] == 200
-        assert request(app, "GET", mount + "/api/meetups")[0] == 200
-    assert b'href="#side-events"' in request(app, "GET", "/")[1]
-    for resource in ["/styles.css", "/script.js", "/assets/images/brand/favicon.png", "/assets/images/brand/mqsf-logo.svg"]:
-        assert request(app, "GET", resource)[0] == 200
+    assert request(app, "GET", "/2026/meetups/../backend/server.py")[0] == 404
+    assert request(app, "GET", "/2026/meetups/.data/events.sqlite3")[0] == 404
+    for removed in ["/mqsf/", "/side-events/", "/event-preview/", "/background-preview/"]:
+        assert request(app, "GET", removed)[0] == 404
+    assert b'url=2026/' in request(app, "GET", "/")[1]
+    assert b'href="#side-events"' in request(app, "GET", "/2026/program/")[1]
+    for resource in ["/2026/", "/2026/event.css", "/2026/program/styles.css", "/2026/program/script.js", "/2026/meetups/app.mjs", "/2026/meetups/conference.json", "/background/", "/assets/images/brand/favicon.png", "/assets/images/brand/mqsf-logo.svg"]:
+        assert request(app, "GET", resource)[0] == 200, resource
+    assert request(app, "GET", "/2026/program")[0] == 308
+    assert request(app, "GET", "/2026/meetups/api/meetups")[0] == 200
+    assert request(app, "GET", "/2026/../backend/server.py")[0] == 404
+    assert request(app, "GET", "/2026/missing.html")[0] == 404
+    assert b"frame-ancestors 'self'" in request(app, "GET", "/background/")[2]["Content-Security-Policy"].encode()
     assert request(app, "GET", "/assets/../backend/server.py")[0] == 404
     assert request(app, "OPTIONS", origin="https://munich-quantum-software.github.io")[0] == 204
     legacy_db = Path(directory) / "legacy.sqlite3"
