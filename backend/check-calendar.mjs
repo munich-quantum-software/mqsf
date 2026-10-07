@@ -23,17 +23,28 @@ function checkLinks(directory) {
     }
   }
 }
-for (const directory of ["2026/", "assets/", "background/"]) checkLinks(directory);
+for (const directory of ["2026/", "assets/", "background/", "logos/"]) checkLinks(directory);
 const home = readFileSync(new URL("index.html", root), "utf8");
 assert.match(home, /http-equiv="refresh" content="0; url=2026\/"/);
 assert(existsSync(new URL("2026/index.html", root)));
 
 const programStyles = readFileSync(new URL("2026/program/styles.css", root), "utf8");
 const meetupStyles = readFileSync(new URL("2026/meetups/styles.css", root), "utf8");
-const fontSizes = [...`${programStyles}\n${meetupStyles}`.matchAll(/font-size:\s*([^;]+);/g)].map(match => match[1]);
-assert.deepEqual([...new Set(fontSizes)].sort(), ["var(--font-body)", "var(--font-heading)", "var(--font-small)"], "Program and meet-ups share only three font sizes");
+const brandStyles = readFileSync(new URL("assets/brand.css", root), "utf8");
+const eventStyles = readFileSync(new URL("2026/event.css", root), "utf8");
+const logoStyles = readFileSync(new URL("logos/styles.css", root), "utf8");
+const fontSizes = [...`${brandStyles}\n${eventStyles}\n${programStyles}\n${meetupStyles}\n${logoStyles}`.matchAll(/font-size:\s*([^;]+);/g)].map(match => match[1]);
+assert.deepEqual([...new Set(fontSizes)].sort(), ["var(--font-body)", "var(--font-heading)", "var(--font-small)"], "All pages share only three font sizes");
 for (const [name, size] of [["small", ".875rem"], ["body", "1rem"], ["heading", "1.75rem"]]) {
-  assert(programStyles.includes(`--font-${name}: ${size};`), `Define the ${name} type size`);
+  assert(brandStyles.includes(`--font-${name}: ${size};`), `Define the shared ${name} type size`);
+}
+assert.match(brandStyles, /@media \(max-width: 700px\)\s*\{\s*:root\s*\{\s*--font-heading: var\(--font-body\);/, "Mobile uses only the two smaller sizes");
+for (const path of ["2026/index.html", "2026/program/index.html", "logos/index.html"]) {
+  const html = readFileSync(new URL(path, root), "utf8");
+  assert.match(html, /<link rel="stylesheet" href="(?:\.\.\/)+assets\/brand\.css\?v=1">/, `${path} loads the shared identity`);
+  for (const [, href] of html.matchAll(/<link\b[^>]*\bhref="([^"]+)"/g)) {
+    assert.notEqual(new URL(href, new URL(path, root)).hostname, "fonts.googleapis.com", `${path} uses the local fonts`);
+  }
 }
 
 const input = [
