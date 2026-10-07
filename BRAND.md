@@ -107,6 +107,8 @@ Keep these boundaries when adjusting existing components.
 - Reuse `background/` and `assets/waves.*` for the wave background rather than
   creating another animation. Respect reduced-motion preferences and keep motion
   behind readable content.
+- Use [the static wave artwork](assets/images/brand/grey-waves-wallpaper.png)
+  when a still background is needed. Keep the supplied image's colors and blur.
 
 ## Asset structure
 
