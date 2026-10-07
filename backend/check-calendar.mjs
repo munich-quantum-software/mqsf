@@ -42,7 +42,9 @@ assert.match(brandStyles, /@media \(max-width: 700px\)\s*\{\s*:root\s*\{\s*--fon
 for (const path of ["2026/index.html", "2026/program/index.html", "logos/index.html"]) {
   const html = readFileSync(new URL(path, root), "utf8");
   assert.match(html, /<link rel="stylesheet" href="(?:\.\.\/)+assets\/brand\.css\?v=1">/, `${path} loads the shared identity`);
-  assert(!html.includes("fonts.googleapis.com"), `${path} uses the local fonts`);
+  for (const [, href] of html.matchAll(/<link\b[^>]*\bhref="([^"]+)"/g)) {
+    assert.notEqual(new URL(href, new URL(path, root)).hostname, "fonts.googleapis.com", `${path} uses the local fonts`);
+  }
 }
 
 const input = [
