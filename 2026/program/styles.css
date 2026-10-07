@@ -97,6 +97,9 @@ h3 { margin-bottom: .4rem; font-size: var(--font-heading); font-weight: 400; lin
 @media (max-width: 900px) {
   .event-meta { display: none; }
 }
+@media (max-width: 700px) {
+  :root { --font-heading: var(--font-body); }
+}
 @media (max-width: 680px) {
   .container { width: min(calc(100% - 2rem), var(--max-width)); }
   .masthead { width: 100%; min-height: 96px; padding-inline: 1rem; }
