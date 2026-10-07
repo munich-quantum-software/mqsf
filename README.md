@@ -1,8 +1,8 @@
 <p align="center">
   <a href="https://munich-quantum-software.github.io/mqsf/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="assets/images/brand/mqsf-logo-dark.svg">
-      <img src="assets/images/brand/mqsf-logo.svg" width="480" alt="Munich Quantum Software Forum">
+      <source media="(prefers-color-scheme: dark)" srcset="assets/images/brand/mqsf-logo-dark-readme.svg">
+      <img src="assets/images/brand/mqsf-logo-readme.svg" width="480" alt="Munich Quantum Software Forum">
     </picture>
   </a>
 </p>
@@ -86,3 +86,17 @@ automatic preview links, and cleanup. Publishing is disabled until explicitly en
 GitHub Pages continues to publish from the repository root. This restructuring
 does not rename the repository, change Squarespace settings, or deploy the Worker.
 See [migration notes](MIGRATION.md) before merging or renaming the repository.
+
+---
+
+MQSF 2026 is organized by the Munich Quantum Software Company (MQSC), supported
+by the Chair for Design Automation at the Technical University of Munich and
+the Munich Quantum Valley.
+
+<p align="center">
+  <a href="https://mq.sc/home"><img src="2026/assets/organizers/mqsc.webp" height="64" alt="Munich Quantum Software Company"></a>
+  &nbsp;&nbsp;&nbsp;
+  <a href="https://www.cda.cit.tum.de/"><img src="2026/assets/organizers/tum.webp" height="64" alt="Technical University of Munich — Chair for Design Automation"></a>
+  &nbsp;&nbsp;&nbsp;
+  <a href="https://www.munich-quantum-valley.de/de/"><img src="2026/assets/organizers/mqv.webp" height="64" alt="Munich Quantum Valley"></a>
+</p>
