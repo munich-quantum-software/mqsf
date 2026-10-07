@@ -6,15 +6,17 @@ work. It is not an accessibility certification.
 
 ## Logos
 
-The [logos page](https://munich-quantum-software.github.io/mqsf/logos/) provides the year-neutral full logo and Q mark,
-with direct downloads and links for copying images. Shared artwork lives in
-`assets/images/brand/`; dated event artwork belongs to its edition.
+The [logos page](https://munich-quantum-software.github.io/mqsf/logos/) provides the full logo for light and dark backgrounds,
+with and without the 2026 date, in SVG and PNG. It has direct downloads and links
+for copying images. Year-neutral artwork lives in `assets/images/brand/`; dated
+artwork belongs to `2026/assets/event/`.
 
-- Keep the original proportions and colors: blue `#006fb7` and charcoal `#3d3d3c`.
-- Use the full logo on a light surface. The white-background PNG also works on
-  dark surfaces; the Q mark has a white interior.
+- Keep the original proportions and colors: blue `#006fb7`, with charcoal
+  `#3d3d3c` lettering on light surfaces or white lettering on dark surfaces.
+- Use the supplied light/dark variants rather than recoloring the logo. All
+  downloads have transparent backgrounds. Use dated artwork only for its edition.
 - Keep clear space around the visible artwork, at least one quarter of the
-  Q mark's height. Do not stretch, crop, recolor, or add effects to the mark.
+  logo symbol's height. Do not stretch, crop, recolor, or add effects to the logo.
 - Prefer SVG for scalable artwork and PNG for applications that require a
   bitmap. Preserve the source SVG when exporting another format.
 
@@ -116,7 +118,7 @@ assets/
 logos/                  Public logo previews and download links
 2026/
   assets/event/         Dated branding, event photos, thumbnails, social artwork
-  assets/sponsors/      Individual sponsor logos and sponsorwall originals
+  assets/sponsors/      Individual sponsor PNGs and sponsorwall originals
   assets/organizers/    Organizer logos
   assets/speakers/      Portraits and their source artwork
   materials/           Posters and other event downloads
@@ -125,7 +127,8 @@ logos/                  Public logo previews and download links
 Use the same edition structure for future years. Keep each edition's sponsor
 roster and artwork within that year; do not overwrite archived assets. Use
 descriptive lowercase filenames and extensions matching the actual format for
-new artwork. Retain source files and avoid recompressing images during moves.
+new artwork. Keep individual sponsor logos in PNG format. Retain source files
+and avoid recompressing images during moves.
 Links should be relative so both production and PR previews work.
 
 ## Review before publishing

@@ -1,7 +1,7 @@
 <p align="center">
   <a href="https://munich-quantum-software.github.io/mqsf/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="assets/images/brand/mqsf-logo-on-white.png">
+      <source media="(prefers-color-scheme: dark)" srcset="assets/images/brand/mqsf-logo-dark.svg">
       <img src="assets/images/brand/mqsf-logo.svg" width="480" alt="Munich Quantum Software Forum">
     </picture>
   </a>
@@ -24,7 +24,7 @@ Download or copy MQSF artwork from the [logos page](https://munich-quantum-softw
   program/            Program, speaker details, and software pitches
   meetups/            2026 calendar client and conference configuration
   assets/event/       Edition branding, photos, and thumbnails
-  assets/sponsors/    Sponsor logos and the sponsor wall
+  assets/sponsors/    Sponsor PNGs and the sponsor wall
   assets/organizers/  Organizer logos
   assets/speakers/    Speaker portraits and source artwork
   materials/          Downloadable event materials

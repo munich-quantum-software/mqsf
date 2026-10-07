@@ -69,26 +69,26 @@ Direct links to edition sponsor and organizer artwork must use the new folders:
 
 | Old path within `2026/assets/` | New path within `2026/assets/` |
 | --- | --- |
-| `event/aws.png` | `sponsors/aws.webp` |
-| `event/classiq.png` | `sponsors/classiq.webp` |
-| `event/HPE.png` | `sponsors/hpe.webp` |
-| `event/planqc.png` | `sponsors/planqc.webp` |
-| `event/neQxt-logo-large-size.png` | `sponsors/neqxt.webp` |
-| `event/quandela.jpg` | `sponsors/quandela.webp` |
-| `event/qudora_long_black-768x291.png` | `sponsors/qudora.webp` |
-| `event/Xanadu-Logo---Landscape.png` | `sponsors/xanadu.webp` |
-| `event/infineon.png` | `sponsors/infineon.webp` |
-| `event/IQM-Logo-black.png` | `sponsors/iqm.webp` |
-| `event/PsiQuantum-Black-Digital.png` | `sponsors/psiquantum.webp` |
-| `event/quantinuum.png` | `sponsors/quantinuum.webp` |
-| `event/quera.png` | `sponsors/quera.webp` |
+| `event/aws.png` | `sponsors/aws.png` |
+| `event/classiq.png` | `sponsors/classiq.png` |
+| `event/HPE.png` | `sponsors/hpe.png` |
+| `event/planqc.png` | `sponsors/planqc.png` |
+| `event/neQxt-logo-large-size.png` | `sponsors/neqxt.png` |
+| `event/quandela.jpg` | `sponsors/quandela.png` |
+| `event/qudora_long_black-768x291.png` | `sponsors/qudora.png` |
+| `event/Xanadu-Logo---Landscape.png` | `sponsors/xanadu.png` |
+| `event/infineon.png` | `sponsors/infineon.png` |
+| `event/IQM-Logo-black.png` | `sponsors/iqm.png` |
+| `event/PsiQuantum-Black-Digital.png` | `sponsors/psiquantum.png` |
+| `event/quantinuum.png` | `sponsors/quantinuum.png` |
+| `event/quera.png` | `sponsors/quera.png` |
 | `event/mqsc.png` | `organizers/mqsc.webp` |
 | `event/tum.png` | `organizers/tum.webp` |
 | `event/mqv.png` | `organizers/mqv.webp` |
 | `sponsorwall.png` | `sponsors/sponsorwall.png` |
 | `sponsorwall.svg` | `sponsors/sponsorwall.svg` |
 
-The moved files retain their original bytes. The individual logos were already
-WebP files; their extensions now match their contents. Update external embeds
-that use the old direct asset URLs. No Worker, database, or Squarespace change is
-needed for these asset moves.
+Individual sponsor logos are now genuine PNGs, using supplied originals or PNG
+exports of the existing artwork. Organizer and sponsorwall moves retain their
+original bytes. Update external embeds that use the old direct asset URLs. No
+Worker, database, or Squarespace change is needed for these asset moves.
