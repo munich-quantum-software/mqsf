@@ -7,7 +7,7 @@ if (!destination) throw new Error("Usage: node .github/scripts/package-site.mjs 
 const preview = process.argv.includes("--preview");
 mkdirSync(destination); // Require a fresh directory; never overwrite an existing site.
 const files = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" }).split("\0")
-  .filter(path => /^(?:index\.html$|\d{4}\/|assets\/|background\/)/.test(path));
+  .filter(path => /^(?:index\.html$|\d{4}\/|assets\/|background\/|logos\/)/.test(path));
 for (const path of files) {
   if (!lstatSync(path).isFile()) throw new Error(`Only regular public files may be published: ${path}`);
   const target = resolve(destination, path);

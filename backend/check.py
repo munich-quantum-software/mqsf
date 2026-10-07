@@ -103,7 +103,7 @@ with TemporaryDirectory() as directory:
         assert request(app, "GET", removed)[0] == 404
     assert b'url=2026/' in request(app, "GET", "/")[1]
     assert b'href="#side-events"' in request(app, "GET", "/2026/program/")[1]
-    for resource in ["/2026/", "/2026/event.css", "/2026/program/styles.css", "/2026/program/script.js", "/2026/meetups/app.mjs", "/2026/meetups/conference.json", "/background/", "/assets/images/brand/favicon.png", "/assets/images/brand/mqsf-logo.svg"]:
+    for resource in ["/2026/", "/2026/event.css", "/2026/program/styles.css", "/2026/program/script.js", "/2026/meetups/app.mjs", "/2026/meetups/conference.json", "/background/", "/logos/", "/logos/styles.css", "/assets/images/brand/favicon.png", "/assets/images/brand/mqsf-logo.svg"]:
         assert request(app, "GET", resource)[0] == 200, resource
     assert request(app, "GET", "/2026/program")[0] == 308
     assert request(app, "GET", "/2026/meetups/api/meetups")[0] == 200

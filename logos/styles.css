@@ -1,0 +1,72 @@
+/* Poppins is licensed under SIL OFL 1.1; see ../assets/fonts/OFL.txt. */
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("../assets/fonts/poppins-300-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../assets/fonts/poppins-500-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: Poppins;
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../assets/fonts/poppins-700-latin.woff2") format("woff2");
+}
+:root {
+  font-family: Poppins, sans-serif;
+  font-weight: 300;
+  color: #171717;
+  background: #fff;
+  --accent: #006fb7;
+  --font-small: .875rem;
+  --font-body: 1rem;
+  --font-heading: 1.75rem;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-size: var(--font-body); line-height: 1.8; }
+a { color: var(--accent); text-underline-offset: .2em; }
+a:hover { text-decoration-thickness: 2px; }
+a:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+h1, h2 { font-size: var(--font-heading); font-weight: 500; line-height: 1.35; margin: 0 0 24px; }
+p { margin: 0 0 16px; }
+.site-header, main, footer { width: min(100% - 48px, 1160px); margin-inline: auto; }
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 24px; border-bottom: 1px solid #e5e5e5; }
+.site-header a { display: inline-flex; align-items: center; min-height: 44px; }
+.site-header a:first-child { color: #171717; font-weight: 500; }
+.site-header a:last-child { font-size: var(--font-small); }
+main { padding-block: 48px; }
+main > p, .usage { max-width: 800px; }
+.logo-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 24px; margin-top: 32px; }
+.logo-card { min-width: 0; border: 1px solid #e5e5e5; border-radius: 10px; overflow: hidden; }
+.asset-preview { display: flex; align-items: center; justify-content: center; height: 264px; padding: 24px; background-color: #fff; }
+.asset-preview img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; }
+.transparent-preview { background-image: conic-gradient(#f2f2f2 25%, #fff 0 50%, #f2f2f2 0 75%, #fff 0); background-size: 24px 24px; }
+.mark-preview img { width: 180px; }
+.card-content { padding: 24px; border-top: 1px solid #e5e5e5; }
+.card-content h2 { margin-bottom: 16px; }
+.downloads { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 24px 8px; }
+.downloads a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 16px; color: #fff; background: var(--accent); border-radius: 10px; font-weight: 500; text-decoration: none; }
+.downloads a:hover { text-decoration: underline; }
+.copy-link { display: inline-flex; align-items: center; min-height: 44px; }
+.file-details { font-size: var(--font-small); margin: 8px 0 0; }
+.usage { margin-top: 48px; }
+footer { padding-block: 24px; border-top: 1px solid #e5e5e5; font-size: var(--font-small); }
+footer a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 700px) {
+  :root { --font-heading: var(--font-body); }
+  .site-header, main, footer { width: calc(100% - 32px); }
+  .site-header { flex-wrap: wrap; padding-block: 16px; }
+  main { padding-block: 32px; }
+  .logo-grid { grid-template-columns: 1fr; gap: 24px; }
+  .asset-preview { height: 220px; padding: 16px; }
+  .card-content { padding: 16px; }
+  .usage { margin-top: 32px; }
+}

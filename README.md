@@ -1,7 +1,19 @@
+<p align="center">
+  <a href="https://munich-quantum-software.github.io/mqsf/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="assets/images/brand/mqsf-logo-on-white.png">
+      <img src="assets/images/brand/mqsf-logo.svg" width="480" alt="Munich Quantum Software Forum">
+    </picture>
+  </a>
+</p>
+
 # Munich Quantum Software Forum
 
 The MQSF event website, programs, and edition-specific materials. Plain HTML,
 CSS, and JavaScript are served directly by GitHub Pages; no frontend build is required.
+
+Use [the corporate identity guide](BRAND.md) when editing or adding pages.
+Download or copy MQSF artwork from the [logos page](https://munich-quantum-software.github.io/mqsf/logos/).
 
 ## Layout
 
@@ -11,9 +23,13 @@ CSS, and JavaScript are served directly by GitHub Pages; no frontend build is re
   event.css, event.js  Landing-page presentation and interactions
   program/            Program, speaker details, and software pitches
   meetups/            2026 calendar client and conference configuration
-  assets/             Edition images, portraits, and sponsor artwork
+  assets/event/       Edition branding, photos, and thumbnails
+  assets/sponsors/    Sponsor logos and the sponsor wall
+  assets/organizers/  Organizer logos
+  assets/speakers/    Speaker portraits and source artwork
   materials/          Downloadable event materials
 assets/               Shared brand images, licensed fonts, and wave animation
+logos/                Edition-independent logo previews and downloads
 background/           Standalone animated background
 backend/              Local calendar preview and tests
 cloudflare/           Production calendar Worker, database migrations, and tests
@@ -34,6 +50,7 @@ uv run --no-project python backend/server.py --demo --port 8030
 Open <http://127.0.0.1:8030/2026/> for the event page,
 <http://127.0.0.1:8030/2026/program/> for the program, or
 <http://127.0.0.1:8030/background/> for the animation.
+The logos page is at <http://127.0.0.1:8030/logos/>.
 The demo calendar uses a local SQLite database, not production data.
 See [the preview guide](backend/README.md) for organizer testing and storage.
 

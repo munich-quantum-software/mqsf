@@ -23,7 +23,7 @@ function checkLinks(directory) {
     }
   }
 }
-for (const directory of ["2026/", "assets/", "background/"]) checkLinks(directory);
+for (const directory of ["2026/", "assets/", "background/", "logos/"]) checkLinks(directory);
 const home = readFileSync(new URL("index.html", root), "utf8");
 assert.match(home, /http-equiv="refresh" content="0; url=2026\/"/);
 assert(existsSync(new URL("2026/index.html", root)));

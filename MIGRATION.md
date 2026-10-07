@@ -61,3 +61,34 @@ changes Squarespace settings.
 
 References: [GitHub repository renames](https://docs.github.com/en/repositories/creating-and-managing-repositories/renaming-a-repository)
 and [Squarespace URL mappings](https://support.squarespace.com/hc/en-us/articles/205815308-URL-mappings).
+
+## Corporate identity asset folders
+
+The event and program URLs stay the same. The shared logo page is at `/logos/`.
+Direct links to edition sponsor and organizer artwork must use the new folders:
+
+| Old path within `2026/assets/` | New path within `2026/assets/` |
+| --- | --- |
+| `event/aws.png` | `sponsors/aws.webp` |
+| `event/classiq.png` | `sponsors/classiq.webp` |
+| `event/HPE.png` | `sponsors/hpe.webp` |
+| `event/planqc.png` | `sponsors/planqc.webp` |
+| `event/neQxt-logo-large-size.png` | `sponsors/neqxt.webp` |
+| `event/quandela.jpg` | `sponsors/quandela.webp` |
+| `event/qudora_long_black-768x291.png` | `sponsors/qudora.webp` |
+| `event/Xanadu-Logo---Landscape.png` | `sponsors/xanadu.webp` |
+| `event/infineon.png` | `sponsors/infineon.webp` |
+| `event/IQM-Logo-black.png` | `sponsors/iqm.webp` |
+| `event/PsiQuantum-Black-Digital.png` | `sponsors/psiquantum.webp` |
+| `event/quantinuum.png` | `sponsors/quantinuum.webp` |
+| `event/quera.png` | `sponsors/quera.webp` |
+| `event/mqsc.png` | `organizers/mqsc.webp` |
+| `event/tum.png` | `organizers/tum.webp` |
+| `event/mqv.png` | `organizers/mqv.webp` |
+| `sponsorwall.png` | `sponsors/sponsorwall.png` |
+| `sponsorwall.svg` | `sponsors/sponsorwall.svg` |
+
+The moved files retain their original bytes. The individual logos were already
+WebP files; their extensions now match their contents. Update external embeds
+that use the old direct asset URLs. No Worker, database, or Squarespace change is
+needed for these asset moves.

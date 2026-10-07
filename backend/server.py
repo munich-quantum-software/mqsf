@@ -172,7 +172,7 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                 asset = (ROOT / filename).resolve()
                 allowed = filename == "index.html" or any(
                     asset.is_relative_to(ROOT / directory)
-                    for directory in ("2026", "assets", "background")
+                    for directory in ("2026", "assets", "background", "logos")
                 )
                 if allowed and asset.is_dir():
                     if not path.endswith("/"):
