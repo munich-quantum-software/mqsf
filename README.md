@@ -96,7 +96,7 @@ the Munich Quantum Valley.
 <p align="center">
   <a href="https://mq.sc/home"><img src="2026/assets/organizers/mqsc.webp" height="64" alt="Munich Quantum Software Company"></a>
   &nbsp;&nbsp;&nbsp;
-  <a href="https://www.cda.cit.tum.de/"><img src="2026/assets/organizers/tum.webp" height="64" alt="Technical University of Munich — Chair for Design Automation"></a>
+  <a href="https://www.cda.cit.tum.de/"><img src="2026/assets/organizers/tum.webp" height="48" alt="Technical University of Munich — Chair for Design Automation"></a>
   &nbsp;&nbsp;&nbsp;
   <a href="https://www.munich-quantum-valley.de/de/"><img src="2026/assets/organizers/mqv.webp" height="64" alt="Munich Quantum Valley"></a>
 </p>
