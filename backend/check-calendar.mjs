@@ -27,10 +27,17 @@ for (const directory of ["2026/", "assets/", "background/", "logos/"]) checkLink
 const home = readFileSync(new URL("index.html", root), "utf8");
 assert.match(home, /http-equiv="refresh" content="0; url=2026\/"/);
 assert(existsSync(new URL("2026/index.html", root)));
+const event = readFileSync(new URL("2026/index.html", root), "utf8");
+assert.match(event, /<nav aria-label="Event navigation">\s*<a href="program\/">Program<\/a>/, "Event navigation opens the full program directly");
 
 const programStyles = readFileSync(new URL("2026/program/styles.css", root), "utf8");
-assert.match(programStyles.slice(programStyles.indexOf("@media (max-width: 680px)")), /\.agenda-list::before \{ left: 73px; \}/, "Mobile timeline stays between the 64px time column and break text");
-assert.match(programStyles.slice(programStyles.indexOf("@media (max-width: 680px)")), /\.speaker-card \.talk-title::after \{ position: absolute; right: var\(--space-24\); bottom: var\(--space-24\);/, "Mobile speaker arrows have equal right and bottom insets");
+assert.match(programStyles, /\.talk-card \{[^}]*align-items: center; align-content: start;/, "Card headers stay aligned when details expand");
+assert.doesNotMatch(programStyles, /\.is-expanded[^}]*align-items: start/);
+assert.match(programStyles.slice(programStyles.indexOf("@media (max-width: 680px)")), /\.talk-card \{ grid-template-columns: 56px 48px minmax\(0, 1fr\);/, "Mobile portraits use the narrower time column");
+assert.match(programStyles.slice(programStyles.indexOf("@media (max-width: 680px)")), /\.agenda-list::before \{ left: 65px; \}/, "Mobile timeline stays between the 56px time column and break text");
+assert.match(programStyles, /\.speaker-card \.talk-duration \{ display: inline-flex; align-items: center; gap: var\(--space-8\);/, "Speaker arrows and minutes stay together");
+assert.match(programStyles, /\.speaker-card \.talk-duration::before \{/, "The folding arrow appears before the minutes");
+assert.match(programStyles.slice(programStyles.indexOf("@media (max-width: 680px)")), /\.talk-duration \{ grid-column: 3; grid-row: 1; align-self: start; justify-self: end; margin: 0;/, "Every mobile card places its minutes on the heading row");
 const meetupStyles = readFileSync(new URL("2026/meetups/styles.css", root), "utf8");
 assert.match(meetupStyles, /\.side-events-ui \.intro-text \{[^}]*border: 1px solid var\(--line\);[^}]*background: var\(--surface\);/, "Meet-up introduction uses a bordered light panel");
 const brandStyles = readFileSync(new URL("assets/brand.css", root), "utf8");
