@@ -32,6 +32,7 @@ const programStyles = readFileSync(new URL("2026/program/styles.css", root), "ut
 const meetupStyles = readFileSync(new URL("2026/meetups/styles.css", root), "utf8");
 const brandStyles = readFileSync(new URL("assets/brand.css", root), "utf8");
 const eventStyles = readFileSync(new URL("2026/event.css", root), "utf8");
+assert.match(eventStyles, /\.brand-panel, \.intro-panel \{[^}]*border: 1px solid var\(--line\);/, "Hero boxes use the shared panel border");
 const logoStyles = readFileSync(new URL("logos/styles.css", root), "utf8");
 const fontSizes = [...`${brandStyles}\n${eventStyles}\n${programStyles}\n${meetupStyles}\n${logoStyles}`.matchAll(/font-size:\s*([^;]+);/g)].map(match => match[1]);
 assert.deepEqual([...new Set(fontSizes)].sort(), ["var(--font-body)", "var(--font-heading)", "var(--font-small)"], "All pages share only three font sizes");

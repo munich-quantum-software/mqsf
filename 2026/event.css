@@ -14,7 +14,7 @@ li p { margin: 0; }
 }
 .hero > .wave-background { z-index: -1; }
 .hero-content { width: min(100%, 720px); margin: auto; }
-.brand-panel, .intro-panel { background: var(--surface); border-radius: var(--radius); }
+.brand-panel, .intro-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 .brand-panel { padding: var(--card-padding); }
 .event-logo { width: min(100%, 550px); margin: 0 auto var(--space-32); }
 nav { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-8) var(--space-24); font-size: var(--font-small); font-weight: var(--weight-heading); }

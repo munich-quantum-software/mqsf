@@ -51,6 +51,10 @@ Underline strokes are decorative, never the only indication of hierarchy.
 - Cards, rectangular photos, dialogs, and controls: **10px corners**, 1px borders.
   Portraits stay circular; videos stay square-cornered. Logos and icons retain
   their source shapes: never add rounding, crop, or stretch them.
+- Content boxes use `var(--surface)` with a **1px solid `var(--line)` border**:
+  `#dbe2ea` on light surfaces, white at 20% opacity on dark surfaces. Choose the
+  border palette for the box's surface, not the artwork behind it. Use the same
+  **10px corners** on plain and wave backgrounds.
 - Buttons: **44px** minimum height, 8px/16px padding, 14px type, weight 500.
   Focus: 3px accent outline, 3px offset. Do not rely on hover alone.
 - Light glass surfaces use white at **94% opacity** with **16px blur**.
