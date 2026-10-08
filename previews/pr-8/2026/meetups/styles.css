@@ -19,9 +19,9 @@
 .side-events-ui a { color: var(--accent); }
 .side-events-ui h1, .side-events-ui h2, .side-events-ui h3, .side-events-ui p { margin: 0; }
 .side-events-ui .intro { --accent: var(--accent-on-dark); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-24); color: var(--brand-white); }
-.side-events-ui .intro-text { grid-column: 1 / -1; font-size: var(--font-body); color: var(--muted-on-dark); }
+.side-events-ui .intro-text { --accent: var(--brand-blue); grid-column: 1 / -1; padding: var(--card-padding); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-size: var(--font-body); color: var(--muted); }
 .side-events-ui .intro-text p + p { margin-top: var(--space-16); }
-.side-events-ui .intro-text strong { color: var(--brand-white); }
+.side-events-ui .intro-text strong { color: var(--ink); }
 .side-events-ui .button { gap: var(--space-8); border: 1px solid transparent; font-weight: var(--weight-heading); font-size: var(--font-small); white-space: nowrap; }
 .side-events-ui .button-add { color: var(--brand-white); background: var(--blue); }
 .side-events-ui .button-add span { font-size: var(--font-heading); line-height: 1; font-weight: var(--weight-body); }
