@@ -48,7 +48,7 @@ h1, h2 { margin-bottom: 0; }
 .day-heading { display: flex; align-items: baseline; gap: var(--space-16); margin: var(--space-32) 0 var(--space-8); padding-left: var(--space-24); color: var(--muted); }
 .day-heading time { color: var(--ink); font-size: var(--font-heading); font-weight: var(--weight-heading); }
 .day-heading:first-child { margin-top: 0; }
-.talk-card { display: grid; grid-template-columns: 100px 62px minmax(0, 1fr) auto; gap: var(--space-16); align-items: center; align-content: start; min-height: 128px; padding: var(--space-16) var(--space-24); background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); backdrop-filter: blur(8px); transition: background .25s ease, border-color .25s ease; }
+.talk-card { display: grid; grid-template-columns: 100px 62px minmax(0, 1fr) auto; gap: var(--space-16); align-items: center; align-content: start; padding: var(--space-16) var(--space-24); background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); backdrop-filter: blur(8px); transition: background .25s ease, border-color .25s ease; }
 .talk-card:hover { background: var(--brand-navy); border-color: var(--accent); }
 :root[data-theme="light"] .talk-card:hover { background: var(--surface-alt); }
 :root[data-theme="light"] .side-events-ui .intro { --accent: var(--brand-blue); color: var(--brand-charcoal); }
@@ -67,6 +67,7 @@ h1, h2 { margin-bottom: 0; }
 .speaker-image { position: absolute; inset: 0; display: block; width: 100%; max-width: 100%; height: 100%; max-height: 100%; object-fit: cover; object-position: center; }
 .portrait-blue, .portrait-pink, .portrait-violet, .portrait-cyan { background: linear-gradient(145deg, var(--cyan), #14709e 75%); }
 .talk-details h3 { margin-bottom: var(--space-8); color: var(--ink); font-size: var(--font-heading); font-weight: var(--weight-body); line-height: var(--leading-heading); }
+.talk-details > :last-child { margin-bottom: 0; }
 .affiliation { color: var(--muted); }
 .speaker { margin: 0; color: var(--muted); font-size: var(--font-heading); }
 .talk-title { display: inline-flex; align-items: center; gap: var(--space-8); margin: 0; color: var(--muted); font-size: var(--font-body); line-height: var(--leading-body); }
@@ -91,7 +92,7 @@ h1, h2 { margin-bottom: 0; }
   .register-link { display: none; }
   .content { padding-top: calc(96px + var(--space-24)); }
   .day-switch { margin-top: var(--space-16); }
-  .talk-card { grid-template-columns: 56px 48px minmax(0, 1fr); gap: var(--space-8); min-height: 108px; padding: var(--space-16) var(--space-8); }
+  .talk-card { grid-template-columns: 56px 48px minmax(0, 1fr); gap: var(--space-8); padding: var(--space-16) var(--space-8); }
   .break-row { grid-template-columns: 56px minmax(0, 1fr) auto; gap: var(--space-8); padding: var(--space-16) var(--space-8); }
   .agenda-list::before { left: 65px; }
   .talk-time { font-size: var(--font-small); }

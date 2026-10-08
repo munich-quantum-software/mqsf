@@ -33,6 +33,8 @@ assert.match(event, /<nav aria-label="Event navigation">\s*<a href="program\/">P
 const programStyles = readFileSync(new URL("2026/program/styles.css", root), "utf8");
 assert.match(programStyles, /\.talk-card \{[^}]*align-items: center; align-content: start;/, "Card headers stay aligned when details expand");
 assert.doesNotMatch(programStyles, /\.is-expanded[^}]*align-items: start/);
+assert.doesNotMatch(programStyles, /\.talk-card \{[^}]*min-height:/, "Content-sized cards keep top and bottom padding balanced");
+assert.match(programStyles, /\.talk-details > :last-child \{ margin-bottom: 0; \}/, "Card text has no trailing margin");
 assert.match(programStyles.slice(programStyles.indexOf("@media (max-width: 680px)")), /\.talk-card \{ grid-template-columns: 56px 48px minmax\(0, 1fr\);/, "Mobile portraits use the narrower time column");
 assert.match(programStyles.slice(programStyles.indexOf("@media (max-width: 680px)")), /\.agenda-list::before \{ left: 65px; \}/, "Mobile timeline stays between the 56px time column and break text");
 assert.match(programStyles, /\.speaker-card \.talk-duration \{ display: inline-flex; align-items: center; gap: var\(--space-8\);/, "Speaker arrows and minutes stay together");
