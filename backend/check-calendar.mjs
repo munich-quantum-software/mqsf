@@ -30,6 +30,7 @@ assert(existsSync(new URL("2026/index.html", root)));
 
 const programStyles = readFileSync(new URL("2026/program/styles.css", root), "utf8");
 const meetupStyles = readFileSync(new URL("2026/meetups/styles.css", root), "utf8");
+assert.match(meetupStyles, /\.side-events-ui \.intro-text \{[^}]*border: 1px solid var\(--line\);[^}]*background: var\(--surface\);/, "Meet-up introduction uses a bordered light panel");
 const brandStyles = readFileSync(new URL("assets/brand.css", root), "utf8");
 const eventStyles = readFileSync(new URL("2026/event.css", root), "utf8");
 assert.match(eventStyles, /\.brand-panel, \.intro-panel \{[^}]*border: 1px solid var\(--line\);/, "Hero boxes use the shared panel border");
