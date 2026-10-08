@@ -30,6 +30,7 @@ assert(existsSync(new URL("2026/index.html", root)));
 
 const programStyles = readFileSync(new URL("2026/program/styles.css", root), "utf8");
 assert.match(programStyles.slice(programStyles.indexOf("@media (max-width: 680px)")), /\.agenda-list::before \{ left: 73px; \}/, "Mobile timeline stays between the 64px time column and break text");
+assert.match(programStyles.slice(programStyles.indexOf("@media (max-width: 680px)")), /\.speaker-card \.talk-title::after \{ position: absolute; right: var\(--space-24\); bottom: var\(--space-24\);/, "Mobile speaker arrows have equal right and bottom insets");
 const meetupStyles = readFileSync(new URL("2026/meetups/styles.css", root), "utf8");
 assert.match(meetupStyles, /\.side-events-ui \.intro-text \{[^}]*border: 1px solid var\(--line\);[^}]*background: var\(--surface\);/, "Meet-up introduction uses a bordered light panel");
 const brandStyles = readFileSync(new URL("assets/brand.css", root), "utf8");
