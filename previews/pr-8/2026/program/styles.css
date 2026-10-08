@@ -95,7 +95,7 @@ h1, h2 { margin-bottom: 0; }
   .day-switch { margin-top: var(--space-16); }
   .talk-card { grid-template-columns: 64px 48px minmax(0, 1fr); gap: var(--space-8); min-height: 108px; padding: var(--space-16) var(--space-8); }
   .break-row { grid-template-columns: 64px minmax(0, 1fr) auto; gap: var(--space-8); padding: var(--space-16) var(--space-8); }
-  .agenda-list::before { left: 81px; }
+  .agenda-list::before { left: 73px; }
   .talk-time { font-size: var(--font-small); }
   .talk-duration { grid-column: 3; justify-self: start; margin-top: calc(-1 * var(--space-8)); font-size: var(--font-small); }
   .speaker-portrait { width: 48px; height: 48px; font-size: var(--font-small); }
