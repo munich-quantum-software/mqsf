@@ -40,11 +40,13 @@ try {
 
   const wave = readFileSync("assets/waves.js", "utf8");
   let darkPoints;
-  for (const light of [false, true]) for (const reduced of [false, true]) {
+  for (const [search, light] of [["", false], ["?theme=light", true], ["?theme=auto", false], ["?theme=auto", true]]) for (const reduced of [false, true]) {
     const stops = [];
     const points = [];
     const layers = [];
     let frames = 0;
+    let preferenceChange;
+    const colorScheme = { matches: search === "?theme=auto" ? light : !light, addEventListener: (_, listener) => { preferenceChange = listener; } };
     const paint = {
       createLinearGradient: () => ({ addColorStop: (offset, color) => stops.push([offset, color]) }),
       fillRect() {}, clearRect() {}, beginPath() {}, fill() {}, moveTo() {}, lineTo() {}, stroke() {},
@@ -60,8 +62,8 @@ try {
       createElement: () => ({ getContext: () => paint, setAttribute() {}, style: {} }),
     };
     runInNewContext(wave, {
-      document, location: { search: light ? "?theme=light" : "" }, URLSearchParams,
-      matchMedia: () => ({ matches: reduced, addEventListener() {} }),
+      document, location: { search }, URLSearchParams,
+      matchMedia: query => query.includes("prefers-color-scheme") ? colorScheme : { matches: reduced, addEventListener() {} },
       devicePixelRatio: 1, window: { addEventListener() {} },
       requestAnimationFrame: () => ++frames, cancelAnimationFrame() {},
     });
@@ -78,7 +80,32 @@ try {
       if (light) assert.equal(JSON.stringify(points), darkPoints, "Light and dark retain identical network geometry");
       else darkPoints = JSON.stringify(points);
     }
+    if (search === "?theme=auto") {
+      colorScheme.matches = !light;
+      preferenceChange();
+      assert.equal(document.documentElement.dataset.theme, light ? "dark" : "light");
+      assert.equal(canvas.hidden, reduced && light);
+      if (!(reduced && light)) assert.equal(paint.strokeStyle, light ? "#1d3951" : "#bfd6e4");
+      assert.equal(frames, reduced ? 0 : 1, "Changing color scheme does not restart the wave");
+    } else {
+      assert.equal(preferenceChange, undefined, "Explicit and default themes stay fixed");
+    }
   }
+  for (const path of ["2026/index.html", "2026/program/index.html"]) {
+    assert(readFileSync(path, "utf8").includes("background/index.html?v=7&amp;theme=auto"), `${path} follows the browser color scheme`);
+  }
+  const colorScheme = { matches: false, addEventListener: (_, listener) => { colorScheme.change = listener; } };
+  const programDocument = { documentElement: { dataset: {} }, querySelectorAll: () => [], getElementById: () => null };
+  runInNewContext(readFileSync("2026/program/script.js", "utf8"), {
+    document: programDocument, matchMedia: () => colorScheme, location: { hash: "" }, window: { addEventListener() {} },
+  });
+  assert.equal(programDocument.documentElement.dataset.theme, "dark");
+  colorScheme.matches = true;
+  colorScheme.change();
+  assert.equal(programDocument.documentElement.dataset.theme, "light", "Program colors follow browser preference changes");
+  colorScheme.matches = false;
+  colorScheme.change();
+  assert.equal(programDocument.documentElement.dataset.theme, "dark");
   console.log("Site packaging checks passed: public files only, unchanged production, isolated read-only previews.");
 } finally {
   rmSync(directory, { recursive: true, force: true });

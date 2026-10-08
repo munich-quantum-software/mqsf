@@ -51,7 +51,9 @@ Open <http://127.0.0.1:8030/2026/> for the event page,
 <http://127.0.0.1:8030/2026/program/> for the program, or
 <http://127.0.0.1:8030/background/> for the animation.
 Use <http://127.0.0.1:8030/background/?theme=light> for the light wave; the same
-`theme=light` query works when embedding it in an iframe. Dark remains the default.
+`theme=light` query works when embedding it in an iframe. Dark remains the standalone
+default; `theme=auto` follows the browser's color scheme. The program and event-page
+header use this automatic mode.
 The logos page is at <http://127.0.0.1:8030/logos/>.
 The demo calendar uses a local SQLite database, not production data.
 See [the preview guide](backend/README.md) for organizer testing and storage.

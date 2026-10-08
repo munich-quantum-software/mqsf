@@ -1,8 +1,8 @@
 (() => {
-  const light = new URLSearchParams(location.search).get('theme') === 'light';
+  const theme = new URLSearchParams(location.search).get('theme');
+  const colorScheme = matchMedia('(prefers-color-scheme: light)');
+  let light = theme === 'light' || (theme === 'auto' && colorScheme.matches);
   document.documentElement.dataset.theme = light ? 'light' : 'dark';
-  const backgroundColors = light ? ['#ffffff', '#f3f5f8', '#eaf0f6'] : ['#171f39', '#17213c', '#18233c'];
-  const networkColor = light ? '#bfd6e4' : '#1d3951';
   document.querySelectorAll('.wave-canvas').forEach((canvas) => {
     const context = canvas.getContext('2d');
     if (!context) return;
@@ -103,6 +103,7 @@
         };
       });
       const background = context.createLinearGradient(0, 0, 0, height);
+      const backgroundColors = light ? ['#ffffff', '#f3f5f8', '#eaf0f6'] : ['#171f39', '#17213c', '#18233c'];
       background.addColorStop(0, backgroundColors[0]);
       background.addColorStop(.55, backgroundColors[1]);
       background.addColorStop(1, backgroundColors[2]);
@@ -112,7 +113,7 @@
         const { paint } = layers[i];
         paint.clearRect(0, 0, width, height);
         // Opaque, pre-blended color keeps overlapping lines and nodes the same color.
-        paint.fillStyle = paint.strokeStyle = networkColor;
+        paint.fillStyle = paint.strokeStyle = light ? '#bfd6e4' : '#1d3951';
         paint.lineCap = 'round';
         items.forEach(item => {
           if (item.index !== undefined) {
@@ -162,6 +163,11 @@
       if (!reducedMotion.matches && !document.hidden) frame = requestAnimationFrame(animate);
     }
     reducedMotion.addEventListener('change', updateMotion);
+    if (theme === 'auto') colorScheme.addEventListener('change', () => {
+      light = colorScheme.matches;
+      document.documentElement.dataset.theme = light ? 'light' : 'dark';
+      draw();
+    });
     document.addEventListener('visibilitychange', updateMotion);
     window.addEventListener('resize', resize, { passive: true });
     resize();
