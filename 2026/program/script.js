@@ -1,3 +1,10 @@
+const colorScheme = matchMedia("(prefers-color-scheme: light)");
+function updateTheme() {
+  document.documentElement.dataset.theme = colorScheme.matches ? "light" : "dark";
+}
+colorScheme.addEventListener("change", updateTheme);
+updateTheme();
+
 const pitchPresentations = [
   "Raphael Seidel — DetectorExperiment: Streamlined QEC on IQM Hardware with a Built-In Path to Real-Time Decoding",
   "Serban Cercelescu — Qubitserf",

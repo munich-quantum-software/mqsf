@@ -63,7 +63,7 @@ jobs:
       pull-requests: write
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url }}${{ steps.destination.outputs.mode == 'preview' && format('{0}/', steps.destination.outputs.folder) || '' }}
     steps:
       - name: Check current revision and choose destination
         id: destination

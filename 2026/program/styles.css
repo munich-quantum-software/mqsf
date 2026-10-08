@@ -1,6 +1,6 @@
 :root {
   --faint: var(--line);
-  --card: var(--card-on-dark);
+  --card: var(--surface);
   --cyan: var(--accent);
   --max-width: var(--content-width);
 }
@@ -50,6 +50,8 @@ h1, h2 { margin-bottom: 0; }
 .day-heading:first-child { margin-top: 0; }
 .talk-card { display: grid; grid-template-columns: 100px 62px minmax(0, 1fr) auto; gap: var(--space-16); align-items: center; min-height: 128px; padding: var(--space-16) var(--space-24); background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); backdrop-filter: blur(8px); transition: background .25s ease, border-color .25s ease; }
 .talk-card:hover { background: var(--brand-navy); border-color: var(--accent); }
+:root[data-theme="light"] .talk-card:hover { background: var(--surface-alt); }
+:root[data-theme="light"] .side-events-ui .intro { --accent: var(--brand-blue); color: var(--brand-charcoal); }
 .pitch-card, .speaker-card { cursor: pointer; }
 .pitch-card:focus-visible, .speaker-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .pitch-card.is-expanded, .speaker-card.is-expanded { align-items: start; }
@@ -93,11 +95,15 @@ h1, h2 { margin-bottom: 0; }
   .day-switch { margin-top: var(--space-16); }
   .talk-card { grid-template-columns: 64px 48px minmax(0, 1fr); gap: var(--space-8); min-height: 108px; padding: var(--space-16) var(--space-8); }
   .break-row { grid-template-columns: 64px minmax(0, 1fr) auto; gap: var(--space-8); padding: var(--space-16) var(--space-8); }
-  .agenda-list::before { left: 81px; }
+  .agenda-list::before { left: 73px; }
   .talk-time { font-size: var(--font-small); }
   .talk-duration { grid-column: 3; justify-self: start; margin-top: calc(-1 * var(--space-8)); font-size: var(--font-small); }
   .speaker-portrait { width: 48px; height: 48px; font-size: var(--font-small); }
   .talk-title { font-size: var(--font-small); }
+  .speaker-card .talk-title::after { position: absolute; right: var(--space-24); bottom: var(--space-24); transform: rotate(45deg); }
+  .speaker-card.is-expanded .talk-title::after { transform: rotate(225deg); }
+  .speaker-card.is-expanded .talk-duration { grid-row: 3; margin-top: 0; }
+  .speaker-card.is-expanded .speaker-details { grid-row: 2; }
   .speaker-details { grid-column: 2 / -1; font-size: var(--font-small); }
   .pitch-list { grid-column: 2 / -1; padding-left: var(--space-16); font-size: var(--font-small); }
 }

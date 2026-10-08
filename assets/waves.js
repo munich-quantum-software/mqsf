@@ -1,4 +1,8 @@
 (() => {
+  const theme = new URLSearchParams(location.search).get('theme');
+  const colorScheme = matchMedia('(prefers-color-scheme: light)');
+  let light = theme === 'light' || (theme === 'auto' && colorScheme.matches);
+  document.documentElement.dataset.theme = light ? 'light' : 'dark';
   document.querySelectorAll('.wave-canvas').forEach((canvas) => {
     const context = canvas.getContext('2d');
     if (!context) return;
@@ -81,9 +85,10 @@
     nodes.forEach((node, index) => buckets[bucket(node.blur)].push({ index }));
 
     function draw() {
-      canvas.hidden = reducedMotion.matches;
-      layers.forEach(layer => { layer.canvas.hidden = reducedMotion.matches; });
-      if (reducedMotion.matches) return;
+      const useStaticImage = reducedMotion.matches && !light;
+      canvas.hidden = useStaticImage;
+      layers.forEach(layer => { layer.canvas.hidden = useStaticImage; });
+      if (useStaticImage) return;
       const unit = side / 1000;
       const offsetX = (width - side) / 2;
       const offsetY = (height - side) / 2;
@@ -98,16 +103,17 @@
         };
       });
       const background = context.createLinearGradient(0, 0, 0, height);
-      background.addColorStop(0, '#171f39');
-      background.addColorStop(.55, '#17213c');
-      background.addColorStop(1, '#18233c');
+      const backgroundColors = light ? ['#ffffff', '#f3f5f8', '#eaf0f6'] : ['#171f39', '#17213c', '#18233c'];
+      background.addColorStop(0, backgroundColors[0]);
+      background.addColorStop(.55, backgroundColors[1]);
+      background.addColorStop(1, backgroundColors[2]);
       context.fillStyle = background;
       context.fillRect(0, 0, width, height);
       buckets.forEach((items, i) => {
         const { paint } = layers[i];
         paint.clearRect(0, 0, width, height);
-        // Opaque, pre-blended teal keeps overlapping lines and nodes the same color.
-        paint.fillStyle = paint.strokeStyle = '#1d3951';
+        // Opaque, pre-blended color keeps overlapping lines and nodes the same color.
+        paint.fillStyle = paint.strokeStyle = light ? '#bfd6e4' : '#1d3951';
         paint.lineCap = 'round';
         items.forEach(item => {
           if (item.index !== undefined) {
@@ -157,6 +163,11 @@
       if (!reducedMotion.matches && !document.hidden) frame = requestAnimationFrame(animate);
     }
     reducedMotion.addEventListener('change', updateMotion);
+    if (theme === 'auto') colorScheme.addEventListener('change', () => {
+      light = colorScheme.matches;
+      document.documentElement.dataset.theme = light ? 'light' : 'dark';
+      draw();
+    });
     document.addEventListener('visibilitychange', updateMotion);
     window.addEventListener('resize', resize, { passive: true });
     resize();
