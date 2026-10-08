@@ -10,7 +10,7 @@ try {
   for (const preview of [false, true]) {
     const output = join(directory, preview ? "preview" : "production");
     execFileSync(process.execPath, [".github/scripts/package-site.mjs", output, ...(preview ? ["--preview"] : [])]);
-    for (const path of ["index.html", "2026/index.html", "2026/program/index.html", "background/index.html", "logos/index.html", "assets/brand.css"]) {
+    for (const path of ["index.html", "2026/index.html", "2026/program/index.html", "background/index.html", "logos/index.html", "assets/brand.css", "assets/images/brand/logo-q-light.svg"]) {
       assert(existsSync(join(output, path)), path);
     }
     assert.equal(existsSync(join(output, ".nojekyll")), !preview);

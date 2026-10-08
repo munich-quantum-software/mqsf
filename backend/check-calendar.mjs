@@ -45,6 +45,7 @@ for (const [name, size] of [["small", ".875rem"], ["body", "1rem"], ["heading", 
 assert.match(brandStyles, /@media \(max-width: 700px\)\s*\{\s*:root\s*\{\s*--font-heading: var\(--font-body\);/, "Mobile uses only the two smaller sizes");
 for (const path of ["2026/index.html", "2026/program/index.html", "logos/index.html"]) {
   const html = readFileSync(new URL(path, root), "utf8");
+  assert.match(html, /<link rel="icon" type="image\/svg\+xml" sizes="any" href="(?:\.\.\/)+assets\/images\/brand\/logo-q-light\.svg\?v=1">/, `${path} uses the shared Q favicon`);
   assert.match(html, /<link rel="stylesheet" href="(?:\.\.\/)+assets\/brand\.css\?v=1">/, `${path} loads the shared identity`);
   for (const [, href] of html.matchAll(/<link\b[^>]*\bhref="([^"]+)"/g)) {
     assert.notEqual(new URL(href, new URL(path, root)).hostname, "fonts.googleapis.com", `${path} uses the local fonts`);
