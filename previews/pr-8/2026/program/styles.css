@@ -1,6 +1,6 @@
 :root {
   --faint: var(--line);
-  --card: var(--card-on-dark);
+  --card: var(--surface);
   --cyan: var(--accent);
   --max-width: var(--content-width);
 }
@@ -50,6 +50,10 @@ h1, h2 { margin-bottom: 0; }
 .day-heading:first-child { margin-top: 0; }
 .talk-card { display: grid; grid-template-columns: 100px 62px minmax(0, 1fr) auto; gap: var(--space-16); align-items: center; min-height: 128px; padding: var(--space-16) var(--space-24); background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); backdrop-filter: blur(8px); transition: background .25s ease, border-color .25s ease; }
 .talk-card:hover { background: var(--brand-navy); border-color: var(--accent); }
+:root[data-theme="light"] .talk-card:hover { background: var(--surface-alt); }
+:root[data-theme="light"] .side-events-ui .intro { --accent: var(--brand-blue); color: var(--brand-charcoal); }
+:root[data-theme="light"] .side-events-ui .intro-text strong { color: var(--brand-charcoal); }
+:root[data-theme="light"] .side-events-ui :is(.intro-text, .community-note, .page-note) { color: var(--muted-on-light); }
 .pitch-card, .speaker-card { cursor: pointer; }
 .pitch-card:focus-visible, .speaker-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .pitch-card.is-expanded, .speaker-card.is-expanded { align-items: start; }
