@@ -6,12 +6,18 @@
     "node": ">=22"
   },
   "scripts": {
+    "format": "prettier --write \"**/*.{html,css,js,mjs,json,jsonc,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{html,css,js,mjs,json,jsonc,yml,yaml}\"",
     "test": "node cloudflare/check.mjs && node backend/check-calendar.mjs && node backend/check-site-build.mjs",
     "dev:api": "wrangler dev --config cloudflare/wrangler.jsonc",
     "deploy:api": "wrangler deploy --config cloudflare/wrangler.jsonc"
   },
+  "prettier": {
+    "singleAttributePerLine": true
+  },
   "devDependencies": {
     "miniflare": "5.20260923.0-alpha",
+    "prettier": "3.9.9",
     "wrangler": "4.140.0"
   }
 }
