@@ -21,12 +21,14 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22'
+          node-version: "22"
           cache: npm
       - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
-          python-version: '3.13'
+          python-version: "3.13"
       - run: npm ci
+      - name: Check formatting
+        run: npm run format:check
       - run: npm test
       - run: uv run --no-project python backend/check.py
       - name: Package public files

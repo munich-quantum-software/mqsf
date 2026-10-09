@@ -10,12 +10,14 @@
   "observability": { "enabled": false },
   "triggers": { "crons": ["* * * * *"] },
   "vars": {
-    "ALLOWED_ORIGINS": "https://munich-quantum-software.github.io"
+    "ALLOWED_ORIGINS": "https://munich-quantum-software.github.io",
   },
-  "d1_databases": [{
-    "binding": "DB",
-    "database_name": "mqsf-2026-calendar",
-    "database_id": "d58e75df-0b02-487f-9927-a0c66ab57427",
-    "migrations_dir": "migrations"
-  }]
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mqsf-2026-calendar",
+      "database_id": "d58e75df-0b02-487f-9927-a0c66ab57427",
+      "migrations_dir": "migrations",
+    },
+  ],
 }

@@ -1,12 +1,12 @@
 (() => {
-  const theme = new URLSearchParams(location.search).get('theme');
-  const colorScheme = matchMedia('(prefers-color-scheme: light)');
-  let light = theme === 'light' || (theme === 'auto' && colorScheme.matches);
-  document.documentElement.dataset.theme = light ? 'light' : 'dark';
-  document.querySelectorAll('.wave-canvas').forEach((canvas) => {
-    const context = canvas.getContext('2d');
+  const theme = new URLSearchParams(location.search).get("theme");
+  const colorScheme = matchMedia("(prefers-color-scheme: light)");
+  let light = theme === "light" || (theme === "auto" && colorScheme.matches);
+  document.documentElement.dataset.theme = light ? "light" : "dark";
+  document.querySelectorAll(".wave-canvas").forEach((canvas) => {
+    const context = canvas.getContext("2d");
     if (!context) return;
-    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
     let time = 0;
     let previous = 0;
     let frame;
@@ -16,37 +16,195 @@
 
     // Image-guided rest positions; depth gives each point a genuine world position.
     const rows = [
-      [[-.10,.14],[.00,.15],[.10,.16],[.21,.17],[.32,.16],[.42,.13],[.51,.12],[.61,.14],[.70,.16],[.80,.17],[.90,.16],[1,.14],[1.10,.13]],
-      [[-.10,.19],[.02,.21],[.12,.22],[.23,.23],[.34,.22],[.44,.20],[.55,.20],[.65,.21],[.75,.22],[.86,.23],[.96,.23],[1.06,.21],[1.16,.20]],
-      [[-.12,.25],[-.02,.27],[.08,.28],[.18,.29],[.28,.30],[.39,.30],[.48,.23],[.55,.214],[.62,.210],[.69,.225],[.78,.207],[.86,.213],[1.04,.29]],
-      [[-.13,.34],[-.02,.33],[.045,.305],[.15,.299],[.267,.316],[.401,.337],[.441,.283],[.526,.275],[.609,.270],[.686,.276],[.754,.296],[.837,.300],[1.02,.31]],
-      [[-.13,.46],[-.06,.43],[.015,.381],[.104,.364],[.195,.346],[.295,.361],[.403,.414],[.515,.404],[.630,.430],[.737,.418],[.795,.414],[.866,.413],[1.03,.36]],
-      [[-.18,.53],[-.05,.46],[.085,.421],[.190,.392],[.310,.396],[.388,.447],[.485,.447],[.575,.451],[.677,.468],[.789,.450],[.872,.447],[.953,.453],[1.09,.45]],
-      [[-.22,.68],[-.08,.57],[.049,.518],[.178,.480],[.299,.455],[.414,.501],[.515,.499],[.637,.524],[.779,.548],[.890,.498],[.979,.507],[1.12,.51],[1.26,.53]],
-      [[-.32,.80],[-.16,.73],[.003,.627],[.137,.602],[.254,.559],[.346,.532],[.465,.579],[.583,.668],[.772,.640],[.909,.571],[1.065,.603],[1.23,.64],[1.40,.69]],
-      [[-.42,.94],[-.24,.87],[-.07,.80],[.075,.726],[.176,.680],[.300,.638],[.364,.711],[.546,.797],[.761,.730],[.970,.662],[1.15,.74],[1.35,.78],[1.52,.84]],
-      [[-.50,1.14],[-.29,1.06],[-.08,.94],[.065,.947],[.204,.765],[.241,.817],[.493,.879],[.688,.812],[.914,.751],[1.08,.865],[1.32,.92],[1.53,1.02],[1.74,1.12]],
-      [[-.62,1.39],[-.37,1.30],[-.10,1.21],[.11,1.15],[.31,1.04],[.48,1.01],[.68,.983],[.887,.949],[1.14,1.07],[1.38,1.19],[1.62,1.24],[1.90,1.31],[2.10,1.42]],
+      [
+        [-0.1, 0.14],
+        [0.0, 0.15],
+        [0.1, 0.16],
+        [0.21, 0.17],
+        [0.32, 0.16],
+        [0.42, 0.13],
+        [0.51, 0.12],
+        [0.61, 0.14],
+        [0.7, 0.16],
+        [0.8, 0.17],
+        [0.9, 0.16],
+        [1, 0.14],
+        [1.1, 0.13],
+      ],
+      [
+        [-0.1, 0.19],
+        [0.02, 0.21],
+        [0.12, 0.22],
+        [0.23, 0.23],
+        [0.34, 0.22],
+        [0.44, 0.2],
+        [0.55, 0.2],
+        [0.65, 0.21],
+        [0.75, 0.22],
+        [0.86, 0.23],
+        [0.96, 0.23],
+        [1.06, 0.21],
+        [1.16, 0.2],
+      ],
+      [
+        [-0.12, 0.25],
+        [-0.02, 0.27],
+        [0.08, 0.28],
+        [0.18, 0.29],
+        [0.28, 0.3],
+        [0.39, 0.3],
+        [0.48, 0.23],
+        [0.55, 0.214],
+        [0.62, 0.21],
+        [0.69, 0.225],
+        [0.78, 0.207],
+        [0.86, 0.213],
+        [1.04, 0.29],
+      ],
+      [
+        [-0.13, 0.34],
+        [-0.02, 0.33],
+        [0.045, 0.305],
+        [0.15, 0.299],
+        [0.267, 0.316],
+        [0.401, 0.337],
+        [0.441, 0.283],
+        [0.526, 0.275],
+        [0.609, 0.27],
+        [0.686, 0.276],
+        [0.754, 0.296],
+        [0.837, 0.3],
+        [1.02, 0.31],
+      ],
+      [
+        [-0.13, 0.46],
+        [-0.06, 0.43],
+        [0.015, 0.381],
+        [0.104, 0.364],
+        [0.195, 0.346],
+        [0.295, 0.361],
+        [0.403, 0.414],
+        [0.515, 0.404],
+        [0.63, 0.43],
+        [0.737, 0.418],
+        [0.795, 0.414],
+        [0.866, 0.413],
+        [1.03, 0.36],
+      ],
+      [
+        [-0.18, 0.53],
+        [-0.05, 0.46],
+        [0.085, 0.421],
+        [0.19, 0.392],
+        [0.31, 0.396],
+        [0.388, 0.447],
+        [0.485, 0.447],
+        [0.575, 0.451],
+        [0.677, 0.468],
+        [0.789, 0.45],
+        [0.872, 0.447],
+        [0.953, 0.453],
+        [1.09, 0.45],
+      ],
+      [
+        [-0.22, 0.68],
+        [-0.08, 0.57],
+        [0.049, 0.518],
+        [0.178, 0.48],
+        [0.299, 0.455],
+        [0.414, 0.501],
+        [0.515, 0.499],
+        [0.637, 0.524],
+        [0.779, 0.548],
+        [0.89, 0.498],
+        [0.979, 0.507],
+        [1.12, 0.51],
+        [1.26, 0.53],
+      ],
+      [
+        [-0.32, 0.8],
+        [-0.16, 0.73],
+        [0.003, 0.627],
+        [0.137, 0.602],
+        [0.254, 0.559],
+        [0.346, 0.532],
+        [0.465, 0.579],
+        [0.583, 0.668],
+        [0.772, 0.64],
+        [0.909, 0.571],
+        [1.065, 0.603],
+        [1.23, 0.64],
+        [1.4, 0.69],
+      ],
+      [
+        [-0.42, 0.94],
+        [-0.24, 0.87],
+        [-0.07, 0.8],
+        [0.075, 0.726],
+        [0.176, 0.68],
+        [0.3, 0.638],
+        [0.364, 0.711],
+        [0.546, 0.797],
+        [0.761, 0.73],
+        [0.97, 0.662],
+        [1.15, 0.74],
+        [1.35, 0.78],
+        [1.52, 0.84],
+      ],
+      [
+        [-0.5, 1.14],
+        [-0.29, 1.06],
+        [-0.08, 0.94],
+        [0.065, 0.947],
+        [0.204, 0.765],
+        [0.241, 0.817],
+        [0.493, 0.879],
+        [0.688, 0.812],
+        [0.914, 0.751],
+        [1.08, 0.865],
+        [1.32, 0.92],
+        [1.53, 1.02],
+        [1.74, 1.12],
+      ],
+      [
+        [-0.62, 1.39],
+        [-0.37, 1.3],
+        [-0.1, 1.21],
+        [0.11, 1.15],
+        [0.31, 1.04],
+        [0.48, 1.01],
+        [0.68, 0.983],
+        [0.887, 0.949],
+        [1.14, 1.07],
+        [1.38, 1.19],
+        [1.62, 1.24],
+        [1.9, 1.31],
+        [2.1, 1.42],
+      ],
     ];
     const depths = [18, 15, 12, 10, 8.5, 7, 5.8, 4.8, 3.8, 3, 2.4];
-    const blur = [9, 11, 10, 6, 2.5, .65, .7, 2.2, 5.5, 10, 14];
+    const blur = [9, 11, 10, 6, 2.5, 0.65, 0.7, 2.2, 5.5, 10, 14];
     // Keep the scattered layout identical across previews and embedded pages.
     let seed = 20261015;
     const random = () => {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
       return seed / 4294967296;
     };
-    const nodes = rows.flatMap((row, r) => row.map(([x, y]) => {
-      x += (random() - .5) * .09;
-      y += (random() - .5) * .06;
-      const z = depths[r];
-      const scale = 1.9 / z;
-      return {
-        x: (x - .5) / scale, y: .95 - (y - .11) / scale, z,
-        radius: (r < 4 ? 6.5 : 1.2 + 19 / z) * 1.3,
-        blur: blur[r] + Math.max(0, Math.abs(x - .5) - .35) * 10,
-      };
-    }));
+    const nodes = rows.flatMap((row, r) =>
+      row.map(([x, y]) => {
+        x += (random() - 0.5) * 0.09;
+        y += (random() - 0.5) * 0.06;
+        const z = depths[r];
+        const scale = 1.9 / z;
+        return {
+          x: (x - 0.5) / scale,
+          y: 0.95 - (y - 0.11) / scale,
+          z,
+          radius: (r < 4 ? 6.5 : 1.2 + 19 / z) * 1.3,
+          blur: blur[r] + Math.max(0, Math.abs(x - 0.5) - 0.35) * 10,
+        };
+      }),
+    );
     const edges = [];
     const columns = rows[0].length;
     for (let r = 0; r < rows.length; r++) {
@@ -56,7 +214,9 @@
         if (r + 1 < rows.length) {
           edges.push([i, i + columns]);
           if (c + 1 < columns) {
-            edges.push((r + c) % 3 === 0 ? [i + 1, i + columns] : [i, i + columns + 1]);
+            edges.push(
+              (r + c) % 3 === 0 ? [i + 1, i + columns] : [i, i + columns + 1],
+            );
           }
         }
       }
@@ -64,22 +224,30 @@
 
     const blurLevels = [1.2, 1.8, 2.6, 4.5, 7, 10, 14, 19];
     const layers = blurLevels.map(() => {
-      const layer = document.createElement('canvas');
-      layer.setAttribute('aria-hidden', 'true');
+      const layer = document.createElement("canvas");
+      layer.setAttribute("aria-hidden", "true");
       layer.hidden = true;
-      return { canvas: layer, paint: layer.getContext('2d') };
+      return { canvas: layer, paint: layer.getContext("2d") };
     });
-    if (layers.some(layer => !layer.paint)) return;
-    layers.forEach(layer => canvas.parentElement.append(layer.canvas));
+    if (layers.some((layer) => !layer.paint)) return;
+    layers.forEach((layer) => canvas.parentElement.append(layer.canvas));
     const buckets = blurLevels.map(() => []);
-    const bucket = value => blurLevels.reduce((best, level, i) =>
-      Math.abs(level - value) < Math.abs(blurLevels[best] - value) ? i : best, 0);
+    const bucket = (value) =>
+      blurLevels.reduce(
+        (best, level, i) =>
+          Math.abs(level - value) < Math.abs(blurLevels[best] - value)
+            ? i
+            : best,
+        0,
+      );
     edges.forEach(([a, b]) => {
       for (let step = 0; step < 6; step++) {
         const start = step / 6;
         const end = (step + 1) / 6;
         const blend = (start + end) / 2;
-        buckets[bucket(nodes[a].blur * (1 - blend) + nodes[b].blur * blend)].push({ a, b, start, end });
+        buckets[
+          bucket(nodes[a].blur * (1 - blend) + nodes[b].blur * blend)
+        ].push({ a, b, start, end });
       }
     });
     nodes.forEach((node, index) => buckets[bucket(node.blur)].push({ index }));
@@ -87,25 +255,29 @@
     function draw() {
       const useStaticImage = reducedMotion.matches && !light;
       canvas.hidden = useStaticImage;
-      layers.forEach(layer => { layer.canvas.hidden = useStaticImage; });
+      layers.forEach((layer) => {
+        layer.canvas.hidden = useStaticImage;
+      });
       if (useStaticImage) return;
       const unit = side / 1000;
       const offsetX = (width - side) / 2;
       const offsetY = (height - side) / 2;
-      const points = nodes.map(node => {
+      const points = nodes.map((node) => {
         // Both harmonics travel together, carrying one continuous crest across the grid.
-        const phase = node.x * 1.45 + node.z * .38 - time * .92;
-        const wave = .105 * Math.sin(phase) + .017 * Math.sin(phase * 2);
+        const phase = node.x * 1.45 + node.z * 0.38 - time * 0.92;
+        const wave = 0.105 * Math.sin(phase) + 0.017 * Math.sin(phase * 2);
         const scale = 1.9 / node.z;
         return {
-          x: offsetX + (.5 + node.x * scale) * side,
-          y: offsetY + (.11 + (.95 - node.y - wave) * scale) * side,
+          x: offsetX + (0.5 + node.x * scale) * side,
+          y: offsetY + (0.11 + (0.95 - node.y - wave) * scale) * side,
         };
       });
       const background = context.createLinearGradient(0, 0, 0, height);
-      const backgroundColors = light ? ['#ffffff', '#f3f5f8', '#eaf0f6'] : ['#171f39', '#17213c', '#18233c'];
+      const backgroundColors = light
+        ? ["#ffffff", "#f3f5f8", "#eaf0f6"]
+        : ["#171f39", "#17213c", "#18233c"];
       background.addColorStop(0, backgroundColors[0]);
-      background.addColorStop(.55, backgroundColors[1]);
+      background.addColorStop(0.55, backgroundColors[1]);
       background.addColorStop(1, backgroundColors[2]);
       context.fillStyle = background;
       context.fillRect(0, 0, width, height);
@@ -113,9 +285,9 @@
         const { paint } = layers[i];
         paint.clearRect(0, 0, width, height);
         // Opaque, pre-blended color keeps overlapping lines and nodes the same color.
-        paint.fillStyle = paint.strokeStyle = light ? '#bfd6e4' : '#1d3951';
-        paint.lineCap = 'round';
-        items.forEach(item => {
+        paint.fillStyle = paint.strokeStyle = light ? "#bfd6e4" : "#1d3951";
+        paint.lineCap = "round";
+        items.forEach((item) => {
           if (item.index !== undefined) {
             const node = nodes[item.index];
             const point = points[item.index];
@@ -127,10 +299,17 @@
             const b = points[item.b];
             const nodeA = nodes[item.a];
             const nodeB = nodes[item.b];
-            paint.lineWidth = (1.2 + 14 / ((nodeA.z + nodeB.z) / 2)) * unit * 1.3;
+            paint.lineWidth =
+              (1.2 + 14 / ((nodeA.z + nodeB.z) / 2)) * unit * 1.3;
             paint.beginPath();
-            paint.moveTo(a.x + (b.x - a.x) * item.start, a.y + (b.y - a.y) * item.start);
-            paint.lineTo(a.x + (b.x - a.x) * item.end, a.y + (b.y - a.y) * item.end);
+            paint.moveTo(
+              a.x + (b.x - a.x) * item.start,
+              a.y + (b.y - a.y) * item.start,
+            );
+            paint.lineTo(
+              a.x + (b.x - a.x) * item.end,
+              a.y + (b.y - a.y) * item.end,
+            );
             paint.stroke();
           }
         });
@@ -146,12 +325,12 @@
       layers.forEach((layer, i) => {
         layer.canvas.width = width;
         layer.canvas.height = height;
-        layer.canvas.style.filter = `blur(${blurLevels[i] * side / ratio / 1000}px)`;
+        layer.canvas.style.filter = `blur(${(blurLevels[i] * side) / ratio / 1000}px)`;
       });
       draw();
     }
     function animate(now) {
-      time += previous ? Math.min(now - previous, 50) / 1000 * .56 : 0;
+      time += previous ? (Math.min(now - previous, 50) / 1000) * 0.56 : 0;
       previous = now;
       draw();
       frame = requestAnimationFrame(animate);
@@ -160,16 +339,18 @@
       cancelAnimationFrame(frame);
       previous = 0;
       draw();
-      if (!reducedMotion.matches && !document.hidden) frame = requestAnimationFrame(animate);
+      if (!reducedMotion.matches && !document.hidden)
+        frame = requestAnimationFrame(animate);
     }
-    reducedMotion.addEventListener('change', updateMotion);
-    if (theme === 'auto') colorScheme.addEventListener('change', () => {
-      light = colorScheme.matches;
-      document.documentElement.dataset.theme = light ? 'light' : 'dark';
-      draw();
-    });
-    document.addEventListener('visibilitychange', updateMotion);
-    window.addEventListener('resize', resize, { passive: true });
+    reducedMotion.addEventListener("change", updateMotion);
+    if (theme === "auto")
+      colorScheme.addEventListener("change", () => {
+        light = colorScheme.matches;
+        document.documentElement.dataset.theme = light ? "light" : "dark";
+        draw();
+      });
+    document.addEventListener("visibilitychange", updateMotion);
+    window.addEventListener("resize", resize, { passive: true });
     resize();
     updateMotion();
   });
