@@ -733,7 +733,13 @@
                 </div>
                 <small class="talk-duration">35 min</small>
               </article>
-              <article class="talk-card schedule-row">
+              <article
+                class="talk-card schedule-row speaker-card"
+                role="button"
+                tabindex="0"
+                aria-expanded="false"
+                aria-controls="josh-details"
+              >
                 <div class="talk-time">09:50–10:25</div>
                 <div
                   class="speaker-portrait portrait-cyan"
@@ -750,10 +756,62 @@
                   <h3>Josh Izaac <span class="affiliation">(Xanadu)</span></h3>
                   <p class="talk-title">
                     Python in the Front, Party in the Backline: Compiling
-                    Low-Latency Quantum Workloads across CPUs, GPUs, and FPGAs
+                    Low-Latency Quantum Workloads across CPUs, GPUs and FPGAs
                   </p>
                 </div>
                 <small class="talk-duration">35 min</small>
+                <div
+                  class="speaker-details"
+                  id="josh-details"
+                  hidden
+                >
+                  <h4>Abstract</h4>
+                  <p>
+                    The transition from quantum research and development to
+                    production-grade, fault-tolerant workload execution remains
+                    one of the most significant challenges in the industry. Just
+                    as a live band relies on hidden stage infrastructure (the
+                    “backline”) to make a performance possible, quantum
+                    processors depend on highly performant classical computing
+                    working in perfect lockstep.
+                  </p>
+                  <p>
+                    While high-level Python frameworks like PennyLane provide an
+                    accessible entry point for quantum algorithm design,
+                    fault-tolerant quantum computing (FTQC) relies heavily on
+                    classical processing, requiring different classical
+                    accelerators and tiers of latency. In particular, real-time
+                    quantum error correction (QEC) requires extremely tight,
+                    microsecond feedback loops with CPUs, GPUs, FPGAs, and
+                    ASICs.
+                  </p>
+                  <p>
+                    In this talk, we introduce Backline, a heterogeneous
+                    compilation framework built on PennyLane and Catalyst.
+                    Backline enables a “one-stop shop” workflow where
+                    researchers and developers can write intertwined classical
+                    and quantum code in Python and compile it for low-latency
+                    execution across CPUs, GPUs, FPGAs, and QPUs. Write a QEC
+                    encoder or decoder from Python (or bring your own!), test it
+                    with meaningful quantum algorithms, and immediately deploy
+                    it for near-real-time prototyping on actual classical and
+                    quantum hardware — while supporting the need to drop through
+                    abstractions and write increasingly optimized and low-level
+                    code.
+                  </p>
+                  <h4>Biography</h4>
+                  <p>
+                    Josh Izaac is a Senior Staff Quantum Scientist at Xanadu,
+                    where he has worked over the last 9 years developing open
+                    source quantum software platforms, including PennyLane,
+                    Strawberry Fields, and Catalyst. His interests lie in
+                    enabling quantum research and development through novel
+                    quantum software, as well as supporting the growing quantum
+                    source community through documentation and content. Prior to
+                    joining Xanadu, he completed a PhD in quantum computing at
+                    the University of Western Australia.
+                  </p>
+                </div>
               </article>
               <article
                 class="talk-card schedule-row pitch-card is-expanded"
