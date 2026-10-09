@@ -59,12 +59,23 @@ The demo calendar uses a local SQLite database, not production data.
 See [the preview guide](backend/README.md) for organizer testing and storage.
 
 ```sh
+npm run format
+npm run format:check
 npm test
 uv run --no-project python backend/check.py
 ```
 
 These checks cover the calendar API, layout, moved page assets, and the current-edition
 entry point. No tests write to the production database.
+
+Before submitting or updating a PR, run `npm run format`, then the checks above.
+We use pinned [Prettier](https://prettier.io/docs/) for HTML, CSS, JavaScript,
+JSON and YAML: two-space indentation, an 80-column wrapping target, one HTML
+attribute per line, and multiline CSS declarations. Its configuration lives in
+`package.json`; supported editor integrations use the same rules. Formatting
+does not change the corporate identity or replace functional checks.
+The required `checks` job runs `npm run format:check`, so unformatted PRs cannot
+merge under the existing main-branch rules.
 
 GitHub Actions also runs these checks for PRs and `main`. See
 [PR preview setup](.github/PREVIEWS.md) for the one-time Pages configuration,
