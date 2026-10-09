@@ -1,6 +1,8 @@
 const colorScheme = matchMedia("(prefers-color-scheme: light)");
 function updateTheme() {
-  document.documentElement.dataset.theme = colorScheme.matches ? "light" : "dark";
+  document.documentElement.dataset.theme = colorScheme.matches
+    ? "light"
+    : "dark";
 }
 colorScheme.addEventListener("change", updateTheme);
 updateTheme();
@@ -58,7 +60,10 @@ let nextPitchNumber = 1;
 
 pitchCards.forEach((card) => {
   const session = Number(card.dataset.pitchSession);
-  const presentations = pitchPresentations.slice(pitchSessionStarts[session], pitchSessionStarts[session + 1]);
+  const presentations = pitchPresentations.slice(
+    pitchSessionStarts[session],
+    pitchSessionStarts[session + 1],
+  );
   const list = card.querySelector(".pitch-list");
   const toggle = card.querySelector(".pitch-toggle");
 
@@ -88,7 +93,9 @@ pitchCards.forEach((card) => {
     card.setAttribute("aria-expanded", String(!isExpanded));
     card.classList.toggle("is-expanded", !isExpanded);
     list.hidden = isExpanded;
-    toggle.textContent = isExpanded ? "View presentations" : "Hide presentations";
+    toggle.textContent = isExpanded
+      ? "View presentations"
+      : "Hide presentations";
   };
 
   card.addEventListener("click", togglePitchList);
@@ -116,7 +123,10 @@ document.querySelectorAll(".speaker-card").forEach((card) => {
     }
   });
   card.addEventListener("keydown", (event) => {
-    if (!event.target.closest("a") && (event.key === "Enter" || event.key === " ")) {
+    if (
+      !event.target.closest("a") &&
+      (event.key === "Enter" || event.key === " ")
+    ) {
       event.preventDefault();
       toggleSpeakerDetails();
     }
@@ -129,7 +139,7 @@ function updateProgramNavigation() {
   const target = document.getElementById(location.hash.slice(1));
   const section = target?.closest(".day-schedule, #side-events");
   const selectedId = section?.id || (location.hash ? null : "day-1");
-  programLinks.forEach(link => {
+  programLinks.forEach((link) => {
     const selected = link.dataset.view === selectedId;
     link.classList.toggle("is-active", selected);
     if (selected) link.setAttribute("aria-current", "location");
