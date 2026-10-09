@@ -34,7 +34,7 @@ const pitchPresentations = [
   "Artemiy Burov — Computing NMR Spectra on Quantum Computers",
   "Zsolt Szabó, Sina Gholizadeh, Samuel Elman, Alan Robertson, Simon Devitt — QLDPC Architect: Hardware-Aware Implementation of qLDPC Codes",
   "Aleksandra Swierkowska, Emmanouil Giortamis, Jannik Pflieger, Felix Gust, Pramod Bhatotia — ECCentric: A Benchmarking Framework for Quantum Error Correction Codes",
-  "Takafumi Miyanaga, Taiki Fujita, Naoyuki Masumoto, Bin Matsui, Kosuke Miyaji, Toshio Mori, and Satoyuki Tsukano — QDash: An Open-Source Platform for QPU Calibration Operations",
+  "Takafumi Miyanaga, Taiki Fujita, Naoyuki Masumoto, Bin Matsui, Kosuke Miyaji, Toshio Mori, and Satoyuki Tsukano — QDash: Managing Calibration Workflows and Engineering Knowledge for Quantum Processors",
   "Giuseppe Bisicchia, Alessandro Bocci, Antonio Brogi — StableShots: Auditable Adaptive Shot Control for Quantum Circuit Runtimes",
   "Giuseppe Bisicchia, Alessandro Bocci, Antonio Brogi — QSOL: A Specification-Oriented Compiler for Quantum Optimization Models",
   "Fujitsu Research of Europe team — Fujitsu QARP: One Package from Research Idea to Quantum Hardware",
