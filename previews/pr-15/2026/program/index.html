@@ -348,14 +348,24 @@
                 <span>11:10–11:40</span><span>Coffee Break</span
                 ><small>30 min</small>
               </div>
-              <article class="talk-card schedule-row">
+              <article
+                class="talk-card schedule-row speaker-card"
+                role="button"
+                tabindex="0"
+                aria-expanded="false"
+                aria-controls="nadav-details"
+              >
                 <div class="talk-time">11:40–12:15</div>
                 <div
                   class="speaker-portrait portrait-blue"
                   role="img"
                   aria-label="Nadav Ben-Ami"
                 >
-                  NB
+                  <img
+                    class="speaker-image"
+                    src="../assets/speakers/nadav.png"
+                    alt=""
+                  />
                 </div>
                 <div class="talk-details">
                   <h3>
@@ -366,13 +376,36 @@
                   </p>
                 </div>
                 <small class="talk-duration">35 min</small>
+                <div
+                  class="speaker-details"
+                  id="nadav-details"
+                  hidden
+                >
+                  <h4>Biography</h4>
+                  <p>
+                    Nadav Ben-Ami is a Quantum Solutions Architect at Classiq
+                    Technologies, working at the intersection of business,
+                    product, and quantum software. He helps industry partners
+                    translate real-world challenges into quantum algorithms and
+                    applications, connecting technical implementation with
+                    business needs. His work spans use-case exploration,
+                    solution development, and collaboration with product and
+                    business teams to shape practical quantum software tools.
+                  </p>
+                </div>
               </article>
-              <article class="talk-card schedule-row">
+              <article
+                class="talk-card schedule-row speaker-card"
+                role="button"
+                tabindex="0"
+                aria-expanded="false"
+                aria-controls="elie-details"
+              >
                 <div class="talk-time">12:15–12:50</div>
                 <div
                   class="speaker-portrait portrait-pink"
                   role="img"
-                  aria-label="Elie Gouzien"
+                  aria-label="Élie Gouzien"
                 >
                   <img
                     class="speaker-image"
@@ -382,11 +415,64 @@
                 </div>
                 <div class="talk-details">
                   <h3>
-                    Elie Gouzien
+                    Élie Gouzien
                     <span class="affiliation">(Alice &amp; Bob)</span>
                   </h3>
+                  <p class="talk-title">
+                    Simultaneous Lattice Surgery for Fast Two-Level Magic State
+                    Factories with Biased-Noise Qubits
+                  </p>
                 </div>
                 <small class="talk-duration">35 min</small>
+                <div
+                  class="speaker-details"
+                  id="elie-details"
+                  hidden
+                >
+                  <h4>Abstract</h4>
+                  <p>
+                    Cat qubits suppress bit-flips exponentially, so a classical
+                    repetition code is enough to correct the remaining
+                    phase-flips. This noise bias already makes first-level magic
+                    state distillation very cheap: unfolded distillation
+                    distills magic states directly at the physical level, on a
+                    square grid. Reaching the error rates required by useful
+                    algorithms, however, needs a second distillation stage,
+                    which then dominates the cost.
+                  </p>
+                  <p>
+                    This talk treats that second stage as a compilation problem.
+                    Its multi-qubit π/8 rotations are first implemented as a
+                    sequence of lattice surgery operations. Then, we merge them
+                    into a single one by designing an ancillary “surgery code”
+                    on a square grid that measures several logical operators at
+                    once, and no other, despite overlaps between the measured
+                    operators. Finding this code is formulated as a
+                    satisfiability problem and solved with z3 and kissat. A
+                    ZX-calculus argument verifies the solutions and yields a
+                    deterministic construction.
+                  </p>
+                  <p>
+                    For a complete CCZ factory at a phase-flip probability of
+                    10⁻³, simultaneous surgery is 2.6 times faster than the
+                    sequential schedule and reduces spacetime volume by a factor
+                    1.3, at an output error of about 4 × 10⁻¹².
+                  </p>
+                  <h4>Biography</h4>
+                  <p>
+                    Élie Gouzien is a quantum physicist at Alice &amp; Bob,
+                    where he works on quantum algorithms, compilation, error
+                    correction and resource estimation. He received his PhD from
+                    Université Côte d’Azur in 2019 for work on multimode quantum
+                    optics, and then joined Nicolas Sangouard’s group at CEA
+                    Saclay. His recent work targets the concrete cost of running
+                    cryptographically relevant algorithms on realistic hardware,
+                    including estimates for factoring 2048-bit RSA integers with
+                    a multimode quantum memory (Phys. Rev. Lett. 127, 140503)
+                    and computing 256-bit elliptic curve discrete logarithms
+                    with cat qubits (Phys. Rev. Lett. 131, 040602).
+                  </p>
+                </div>
               </article>
               <article
                 class="talk-card schedule-row pitch-card is-expanded"
