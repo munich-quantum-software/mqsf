@@ -16,7 +16,6 @@ const pitchPresentations = [
   "Oliver Denninger — The FullStaQD Reference Architecture for the Quantum Software Stack",
   "Cherilyn Christen, Nathaniel Pacey — A Framework for Noisy Gate Execution Simulating Quantum Circuits",
   "Reinhard Stahn, Julian Farnsteiner, Enrique Naranjo Bejarano, Riccardo Romanello, Christroph Fleckenstein, Wolfgang Lechner — The QCC Compiler: Compiling to a RISC-V Quantum ISA with LLVM and MLIR",
-  "Marvin Erdmann, Florian Geissler, Johannes Oberreuter — Application Driven Benchmarking with QUARK",
   "Brad Chase, Farrokh Labib — Clifft: A Simulator for Early Fault-Tolerant Quantum Computing",
   "Kevin Mato — Scaling Quantum Computing Using AI Supercomputing",
   "David da Costa, Thomas Keitzl, Elisabeth Lobe, Johannes Renkl, Gary Schmiedinghoff, Thomas Stehle, Lukas Windgätter — QCI Connect SDK: A Flexible Toolbox for Bringing Applications to Quantum Computers",
@@ -30,6 +29,7 @@ const pitchPresentations = [
   "Paul K. Faehrmann, Peter-Jan Derks, Frederik Wilde, Johannes Frank — Piper Draw: An Interactive Tool for Building, Viewing, and Analyzing Lattice Surgery Pipe Diagrams",
   "Abhoy Kole, Till Schnittka, Karl Aaron Rudkowski, Julie Maria Raju, Majd Assaad, Louis Kruger, Rolf Drechsler — QCore: A Unified Quantum Software Framework from High-Level Specifications to Dynamic Compilation and Debugging",
   "Ekin Devrim Şahinkaya, Ercüment Kaya, Martin Schulz — OpenMQPI: MLIR-Based OpenMP Extension for Quantum Programming",
+  "Marvin Erdmann, Florian Geissler, Johannes Oberreuter — Application Driven Benchmarking with QUARK",
   "Rahul Banerjee, Sarah Volkamer, Dr. Daniel Scherer — Circuit-Cutting Module for Near-Term Quantum Computing",
   "Gabriele Palazzo — Quantum Machine Learning with the Open-Source Qibo Stack: From Simulation to Hardware",
   "Satoyuki Tsukano, Naoyuki Masumoto, Bin Matsui, Kosuke Miyaji, Takafumi Miyanaga, and Toshio Mori — OQTOPUS: An Extensible Full-Stack Platform for Quantum Computing",
@@ -55,7 +55,7 @@ const pitchPresentations = [
 ];
 
 const pitchCards = document.querySelectorAll(".pitch-card");
-const pitchSessionStarts = [0, 11, 22, 33];
+const pitchSessionStarts = [0, 10, 22, 33];
 let nextPitchNumber = 1;
 
 pitchCards.forEach((card) => {
