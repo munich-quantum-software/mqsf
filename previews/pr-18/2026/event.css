@@ -38,54 +38,23 @@ li p {
   width: min(100%, 720px);
   margin: auto;
 }
-.brand-panel,
-.intro-panel {
+.brand-panel {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-}
-.brand-panel {
   padding: var(--card-padding);
 }
 .event-logo {
   width: min(100%, 550px);
   margin: 0 auto var(--space-32);
 }
-nav {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: var(--space-8) var(--space-24);
-  font-size: var(--font-small);
-  font-weight: var(--weight-heading);
+.event-logo img {
+  width: 100%;
+  aspect-ratio: 3.35;
+  object-fit: cover;
 }
-nav a {
-  color: inherit;
-  text-decoration-color: var(--accent);
-}
-.lookback-link {
-  padding: var(--space-16) var(--space-24);
-  border-radius: var(--radius);
-  background: var(--brand-blue);
-  color: #fff;
-  text-decoration: none;
-}
-.lookback-link:hover {
-  background: var(--brand-navy);
-}
-.intro-panel {
-  margin-top: var(--space-32);
-  padding: var(--card-padding);
-}
-.intro-panel h1 {
+.brand-panel p {
   text-align: center;
-  margin-bottom: var(--space-32);
-}
-.intro-panel p {
-  text-align: left;
-}
-.intro-panel p:last-child {
   margin-bottom: 0;
 }
 
@@ -128,8 +97,8 @@ nav a {
 }
 .previous-events {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-48);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-32);
 }
 .past-event {
   display: flex;
@@ -198,6 +167,22 @@ nav a {
   border: 0;
 }
 
+.video-placeholder {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.video-placeholder img {
+  object-fit: contain;
+  padding: var(--space-8);
+}
+.video-placeholder span {
+  position: absolute;
+  inset: auto 0 var(--space-8);
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--font-small);
+}
+
 .site-footer {
   text-align: center;
   padding: var(--space-48) var(--gutter) var(--space-32);
@@ -217,7 +202,13 @@ nav a {
   margin: 0;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 1100px) {
+  .previous-events {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
   .previous-events {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-48);
@@ -227,16 +218,7 @@ nav a {
     width: 100%;
     margin-inline: auto;
   }
-}
-
-@media (max-width: 640px) {
   .event-logo {
-    margin-bottom: var(--space-24);
-  }
-  nav {
-    gap: var(--space-8) var(--space-16);
-  }
-  .intro-panel h1 {
     margin-bottom: var(--space-24);
   }
   .section-title {
