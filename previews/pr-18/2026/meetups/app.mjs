@@ -59,7 +59,7 @@ async function api(
       throw new Error(
         "This PR preview is read-only. Use the local demo to test editing.",
       );
-    return { events: [], demo: true };
+    if (!config?.archived) return { events: [], demo: true };
   }
   if (config?.archived && options.method)
     throw new Error(
@@ -292,6 +292,20 @@ function openDetails(id) {
   viewingId = id;
   showDetails(event);
   details.showModal();
+  if (
+    document.documentElement.dataset.embed === "meetups" &&
+    window.parent !== window
+  ) {
+    const { top, height } = details.getBoundingClientRect();
+    window.parent.postMessage(
+      {
+        type: "mqsf-calendar-dialog",
+        top: Math.round(top),
+        height: Math.ceil(height),
+      },
+      "*",
+    );
+  }
 }
 
 function draft() {
@@ -728,6 +742,8 @@ async function initialize() {
     if (!response.ok)
       throw new Error("Could not load the conference dates. Please try again.");
     config = await response.json();
+    if (new URLSearchParams(location.search).get("embed") === "meetups")
+      config.archived = true;
     $("hours-note").textContent =
       config.hoursNote || "Meet-ups run alongside the main program.";
     $("add-event").disabled = false;

@@ -97,6 +97,34 @@ html {
   z-index: 1;
   padding: calc(120px + var(--section-space)) 0 var(--section-space);
 }
+:root[data-embed="meetups"] {
+  min-width: 0;
+}
+:root[data-embed="meetups"] .skip-link,
+:root[data-embed="meetups"] .wave-background,
+:root[data-embed="meetups"] .masthead,
+:root[data-embed="meetups"] .section-label,
+:root[data-embed="meetups"] .agenda-list,
+:root[data-embed="meetups"] .sponsors,
+:root[data-embed="meetups"] #side-events > .intro {
+  display: none;
+}
+:root[data-embed="meetups"] .page-shell {
+  min-height: 0;
+}
+:root[data-embed="meetups"] .content {
+  width: 100%;
+  padding: 0;
+}
+:root[data-embed="meetups"] #side-events {
+  margin: 0;
+}
+:root[data-embed="meetups"] .calendar-head {
+  top: 0;
+}
+:root[data-embed="meetups"] .calendar-card {
+  scroll-margin-top: 0;
+}
 .kicker {
   margin: 0 0 1rem;
   color: var(--cyan);
