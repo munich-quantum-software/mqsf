@@ -54,6 +54,7 @@ try {
   );
   const context = {
     window: { MQSF_PREVIEW: true },
+    config: { archived: false },
     organizerKey: "",
     fetch: () => {
       throw new Error("Preview contacted network");
@@ -76,24 +77,81 @@ try {
     assert(["2026-10-14", "2026-10-15"].includes(event.date));
   }
   const fetched = [];
-  const archivedCall = runInNewContext(`${api}; api`, {
-    window: {},
-    config: { archived: true },
-    organizerKey: "",
-    archiveUrl: "https://archive.example/2026/meetups/archive.json",
-    AbortController,
-    setTimeout,
-    clearTimeout,
-    fetch: async (url) => {
-      fetched.push(url);
-      return { ok: true, json: async () => archive };
+  for (const preview of [false, true]) {
+    const archivedCall = runInNewContext(`${api}; api`, {
+      window: { MQSF_PREVIEW: preview },
+      config: { archived: true },
+      organizerKey: "",
+      archiveUrl: "https://archive.example/2026/meetups/archive.json",
+      AbortController,
+      setTimeout,
+      clearTimeout,
+      fetch: async (url) => {
+        fetched.push(url);
+        return { ok: true, json: async () => archive };
+      },
+    });
+    assert.equal((await archivedCall()).events.length, archive.events.length);
+    for (const method of ["POST", "PUT", "DELETE"])
+      await assert.rejects(archivedCall("/meetups", { method }), /read-only/);
+    await assert.rejects(
+      archivedCall("/organizer", { method: "POST" }),
+      /read-only/,
+    );
+  }
+  assert.deepEqual(
+    fetched,
+    Array(2).fill("https://archive.example/2026/meetups/archive.json"),
+  );
+  const embeddedContext = {
+    config: null,
+    URLSearchParams,
+    location: { search: "?embed=meetups" },
+    fetch: async () => ({ ok: true, json: async () => ({ archived: false }) }),
+    URL,
+    $: () => ({}),
+    organizerLink() {},
+    renderCalendar() {},
+    async refresh() {},
+  };
+  const initialize = source
+    .slice(source.indexOf("async function initialize()"))
+    .split("\nchooseDay(selectedDay);")[0]
+    .replace("import.meta.url", '"https://archive.example/app.mjs"');
+  await runInNewContext(`${initialize}; initialize`, embeddedContext)();
+  assert.equal(
+    embeddedContext.config.archived,
+    true,
+    "Embedded calendars remain read-only even with a non-archive configuration",
+  );
+  const dialogMessages = [];
+  let dialogOpen = false;
+  const openDetails = source.slice(
+    source.indexOf("function openDetails("),
+    source.indexOf("\nfunction draft("),
+  );
+  runInNewContext(`${openDetails}; openDetails`, {
+    events: [{ id: "public-event" }],
+    showDetails() {},
+    details: {
+      showModal() {
+        dialogOpen = true;
+      },
+      getBoundingClientRect() {
+        return { top: 250.2, height: 700.1 };
+      },
     },
-  });
-  assert.equal((await archivedCall()).events.length, archive.events.length);
-  for (const method of ["POST", "PUT", "DELETE"])
-    await assert.rejects(archivedCall("/meetups", { method }), /read-only/);
-  assert.deepEqual(fetched, [
-    "https://archive.example/2026/meetups/archive.json",
+    document: { documentElement: { dataset: { embed: "meetups" } } },
+    window: {
+      parent: {
+        postMessage: (data) =>
+          dialogMessages.push(JSON.parse(JSON.stringify(data))),
+      },
+    },
+  })("public-event");
+  assert(dialogOpen);
+  assert.deepEqual(dialogMessages, [
+    { type: "mqsf-calendar-dialog", top: 250, height: 701 },
   ]);
 
   const wave = readFileSync("assets/waves.js", "utf8");
@@ -243,6 +301,7 @@ try {
     document: programDocument,
     matchMedia: () => colorScheme,
     location: { hash: "" },
+    URLSearchParams,
     window: { addEventListener() {} },
   });
   assert.equal(programDocument.documentElement.dataset.theme, "dark");
@@ -256,6 +315,46 @@ try {
   colorScheme.matches = false;
   colorScheme.change();
   assert.equal(programDocument.documentElement.dataset.theme, "dark");
+  const messages = [];
+  let calendarHeight = 1200;
+  let resize;
+  const calendar = {
+    getBoundingClientRect: () => ({ height: calendarHeight }),
+  };
+  const embeddedDocument = {
+    ...programDocument,
+    documentElement: { dataset: {} },
+    getElementById: (id) => (id === "side-events" ? calendar : null),
+  };
+  runInNewContext(readFileSync("2026/program/script.js", "utf8"), {
+    document: embeddedDocument,
+    matchMedia: () => colorScheme,
+    location: { hash: "", search: "?embed=meetups" },
+    URLSearchParams,
+    ResizeObserver: class {
+      constructor(callback) {
+        resize = callback;
+      }
+      observe(element) {
+        assert.equal(element, calendar);
+      }
+    },
+    window: {
+      addEventListener() {},
+      parent: {
+        postMessage: (data) => messages.push(JSON.parse(JSON.stringify(data))),
+      },
+    },
+  });
+  assert.equal(embeddedDocument.documentElement.dataset.embed, "meetups");
+  assert.equal(embeddedDocument.documentElement.dataset.theme, "light");
+  resize();
+  calendarHeight = 1260.2;
+  resize();
+  assert.deepEqual(messages, [
+    { type: "mqsf-calendar-height", height: 1200 },
+    { type: "mqsf-calendar-height", height: 1261 },
+  ]);
   console.log(
     "Site packaging checks passed: public files only, unchanged production, isolated read-only previews.",
   );

@@ -52,6 +52,14 @@ Cloudflare Worker as well as the static site so cached or direct API clients
 cannot keep editing. Do not clear the database or run any seed migration.
 The local tests still exercise pre-archive editing using disposable databases.
 
+Embed just the archived calendar with `/2026/program/?embed=meetups`. It keeps
+the day selector and meet-up details, forces read-only mode, and sends the parent
+`{ type: "mqsf-calendar-height", height }` when its height changes. The parent
+also receives `{ type: "mqsf-calendar-dialog", top, height }` when details open,
+so it can scroll the dialog into view. Messages contain layout dimensions only;
+the parent must validate the frame's origin and source before using them. PR previews
+also show the public archive snapshot without contacting the editing API.
+
 ## Local development
 
 Use Node.js 22 or newer and Python 3.10 or newer through uv:

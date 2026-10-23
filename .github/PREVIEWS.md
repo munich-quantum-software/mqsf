@@ -48,7 +48,8 @@ generated storage, not source code. Website content still lives on `main`.
   same-repository PRs publish; fork PRs get tests and a downloadable artifact only.
   This is not an isolation boundary for untrusted JavaScript.
 - Preview packaging replaces the calendar configuration with a preview flag.
-  The client returns an empty, labelled calendar without making API requests.
+  Archived editions load only their public static snapshot; other editions show
+  an empty, labelled calendar. Neither makes editing API requests.
   Creating, editing, deleting, and organizer sign-in are rejected as read-only.
   Use the existing local demo for full interactive calendar testing.
 - Preview HTML has `noindex, nofollow`. This discourages indexing, not access.
