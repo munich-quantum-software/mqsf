@@ -38,6 +38,28 @@ cloudflare/           Production calendar Worker, database migrations, and tests
 The root opens the current edition. All content uses year-specific URLs; there
 are no legacy page aliases.
 
+## 2026 archive
+
+The [2026 look back](https://mq.sc/mqsf/2026/) is hosted on MQSC’s website.
+The program and all speaker abstracts remain here. The 19 public meet-ups are
+preserved in `2026/meetups/archive.json`; no contact emails or private change
+history are included. The calendar reads this static snapshot without calling
+the editing API or polling for changes.
+
+`2026/meetups/conference.json` marks this edition as archived. Both API
+implementations reject additions, edits, and deletions. Deploy the updated
+Cloudflare Worker as well as the static site so cached or direct API clients
+cannot keep editing. Do not clear the database or run any seed migration.
+The local tests still exercise pre-archive editing using disposable databases.
+
+Embed just the archived calendar with `/2026/program/?embed=meetups`. It keeps
+the day selector and meet-up details, forces read-only mode, and sends the parent
+`{ type: "mqsf-calendar-height", height }` when its height changes. The parent
+also receives `{ type: "mqsf-calendar-dialog", top, height }` when details open,
+so it can scroll the dialog into view. Messages contain layout dimensions only;
+the parent must validate the frame's origin and source before using them. PR previews
+also show the public archive snapshot without contacting the editing API.
+
 ## Local development
 
 Use Node.js 22 or newer and Python 3.10 or newer through uv:

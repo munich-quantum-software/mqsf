@@ -90,12 +90,14 @@ def organizer_access(environ, secret):
     return True
 
 
-def create_app(database=None, allowed_origins=None, demo=False, seed_examples=False, organizer_key=None):
+def create_app(database=None, allowed_origins=None, demo=False, seed_examples=False, organizer_key=None, archived=None):
     if organizer_key is None:
         organizer_key = os.environ.get("ORGANIZER_ACCESS_KEY")
     if allowed_origins is None:
         allowed_origins = tuple(filter(None, os.environ.get("MQSF_ALLOWED_ORIGINS", "").split(",")))
     config = json.loads((PUBLIC / "conference.json").read_text())
+    if archived is None:
+        archived = config.get("archived", False)
     for day in config["days"]:
         datetime.strptime(day["date"], "%Y-%m-%d")
         if day["start"] is not None:
@@ -200,6 +202,8 @@ def create_app(database=None, allowed_origins=None, demo=False, seed_examples=Fa
                 if method == "GET" and not event_id:
                     events = [dict(row) for row in connection.execute(f"SELECT {PUBLIC_COLUMNS} FROM events ORDER BY date, start, end, id")]
                     return reply(200, {"events": events, "demo": demo})
+                if archived:
+                    raise RequestError(403, "MQSF 2026 has ended. This calendar is a read-only archive.")
                 if method not in ("POST", "PUT", "DELETE") or (method == "POST") == bool(event_id):
                     raise RequestError(405, "Method not allowed.")
                 organizer = organizer_access(environ, organizer_key)

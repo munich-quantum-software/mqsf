@@ -22,14 +22,11 @@ if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
   });
   document
     .querySelectorAll(
-      ".hero-content img, .hero-content nav, .intro-panel h1, .intro-panel p, .section .content h2, .section .content h3, .section .content p, .section .content li, .section .content img, .section .content .video-preview, .section .content .logo-row a, .site-footer > *",
+      ".hero-content img, .hero-content p, .section .content h2, .section .content h3, .section .content p, .section .content li, .section .content img, .section .content .video-preview, .site-footer > *",
     )
     .forEach((element) => {
       if (element.tagName === "P" && element.closest("li")) return;
-      if (
-        element.tagName === "IMG" &&
-        element.closest(".video-preview, .logo-row")
-      )
+      if (element.tagName === "IMG" && element.closest(".video-preview"))
         return;
       element.classList.add("reveal");
       observer.observe(element);

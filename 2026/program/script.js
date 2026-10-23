@@ -1,8 +1,24 @@
+const embeddedMeetups =
+  new URLSearchParams(location.search).get("embed") === "meetups";
+if (embeddedMeetups) {
+  document.documentElement.dataset.embed = "meetups";
+  const calendar = document.getElementById("side-events");
+  let lastHeight = 0;
+  function reportHeight() {
+    const height = Math.ceil(calendar.getBoundingClientRect().height);
+    if (window.parent !== window && height > 0 && height !== lastHeight) {
+      lastHeight = height;
+      window.parent.postMessage({ type: "mqsf-calendar-height", height }, "*");
+    }
+  }
+  new ResizeObserver(reportHeight).observe(calendar);
+  reportHeight();
+}
+
 const colorScheme = matchMedia("(prefers-color-scheme: light)");
 function updateTheme() {
-  document.documentElement.dataset.theme = colorScheme.matches
-    ? "light"
-    : "dark";
+  document.documentElement.dataset.theme =
+    embeddedMeetups || colorScheme.matches ? "light" : "dark";
 }
 colorScheme.addEventListener("change", updateTheme);
 updateTheme();
