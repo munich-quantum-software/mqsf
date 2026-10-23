@@ -191,6 +191,11 @@ export default {
         ).all();
         return reply(200, { events: results, demo: false });
       }
+      if (conference.archived)
+        throw new RequestError(
+          403,
+          "MQSF 2026 has ended. This calendar is a read-only archive.",
+        );
       if (
         !["POST", "PUT", "DELETE"].includes(method) ||
         (method === "POST") === Boolean(id)

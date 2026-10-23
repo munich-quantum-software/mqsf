@@ -7,7 +7,11 @@ import secrets
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from server import create_app, validate_event, RequestError
+from server import create_app as create_archive_app, validate_event, RequestError
+
+
+def create_app(*args, **kwargs):
+    return create_archive_app(*args, archived=False, **kwargs)
 
 
 def request(app, method="GET", path="/2026/meetups/api/meetups", data=None, origin=None, content_type="application/json", authorization=None):
@@ -236,4 +240,13 @@ with TemporaryDirectory() as directory:
     rotated = create_app(organizer_db, organizer_key=secrets.token_urlsafe(32))
     assert request(rotated, "POST", "/api/organizer", authorization=authorization)[0] == 401
     assert request(rotated, "DELETE", path, {"version": 999}, authorization=authorization)[0] == 401
+    archived = create_archive_app(organizer_db, organizer_key=key)
+    before = request(archived)[1]
+    assert before == request(organizer)[1]
+    for route in ["/api/meetups", "/api/events"]:
+        for method in ["POST", "PUT", "DELETE"]:
+            target = route if method == "POST" else route + "/" + automatic[1]["event"]["id"]
+            assert request(archived, method, target, event, authorization=authorization)[0] == 403
+    assert request(archived)[1] == before, "Archiving preserves all public entries and rejects changes"
+
 print("Calendar API checks passed: persistence, organizers, migration, concurrent edits, deletion, hours, navigation, and path isolation.")

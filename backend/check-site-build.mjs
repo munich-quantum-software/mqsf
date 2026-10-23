@@ -69,6 +69,33 @@ try {
   }
   await assert.rejects(call("/organizer", { method: "POST" }), /read-only/);
 
+  const archive = JSON.parse(readFileSync("2026/meetups/archive.json", "utf8"));
+  assert(archive.events.length > 0);
+  for (const event of archive.events) {
+    assert.equal(Object.hasOwn(event, "contact_email"), false);
+    assert(["2026-10-14", "2026-10-15"].includes(event.date));
+  }
+  const fetched = [];
+  const archivedCall = runInNewContext(`${api}; api`, {
+    window: {},
+    config: { archived: true },
+    organizerKey: "",
+    archiveUrl: "https://archive.example/2026/meetups/archive.json",
+    AbortController,
+    setTimeout,
+    clearTimeout,
+    fetch: async (url) => {
+      fetched.push(url);
+      return { ok: true, json: async () => archive };
+    },
+  });
+  assert.equal((await archivedCall()).events.length, archive.events.length);
+  for (const method of ["POST", "PUT", "DELETE"])
+    await assert.rejects(archivedCall("/meetups", { method }), /read-only/);
+  assert.deepEqual(fetched, [
+    "https://archive.example/2026/meetups/archive.json",
+  ]);
+
   const wave = readFileSync("assets/waves.js", "utf8");
   let darkPoints;
   for (const [search, light] of [
