@@ -48,8 +48,13 @@ assert(existsSync(new URL("2026/index.html", root)));
 const event = readSource("2026/index.html");
 assert.match(
   event,
-  /<nav aria-label="Event navigation">\s*<a href="program\/">Program<\/a>/,
-  "Event navigation opens the full program directly",
+  /<nav aria-label="Event navigation">\s*<a[^>]*href="https:\/\/mq\.sc\/mqsf\/2026\/"/,
+  "Event navigation opens the 2026 look back",
+);
+assert.match(
+  event,
+  /<footer[\s\S]*<a href="program\/">2026 program &amp; meet-ups<\/a>/,
+  "The event footer keeps the full program and meet-up archive reachable",
 );
 
 const programStyles = readSource("2026/program/styles.css");
