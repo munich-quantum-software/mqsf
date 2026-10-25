@@ -131,7 +131,7 @@ const counterScript =
 for (const scenario of ["reduced motion", "complete", "preference change"]) {
   const counter = {
     textContent: "400",
-    dataset: { count: "400", decimals: "0" },
+    dataset: { count: "400" },
   };
   let intersect,
     frame,
@@ -420,14 +420,12 @@ try {
         );
       }
     }
-  for (const path of ["2026/program/index.html"]) {
-    assert(
-      readFileSync(path, "utf8").includes(
-        "background/index.html?v=7&amp;theme=auto",
-      ),
-      `${path} follows the browser color scheme`,
-    );
-  }
+  assert(
+    readFileSync("2026/program/index.html", "utf8").includes(
+      "background/index.html?v=7&amp;theme=auto",
+    ),
+    "The program follows the browser color scheme",
+  );
   const colorScheme = {
     matches: false,
     addEventListener: (_, listener) => {
