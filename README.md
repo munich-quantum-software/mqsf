@@ -19,8 +19,9 @@ Download or copy MQSF artwork from the [logos page](https://munich-quantum-softw
 
 ```text
 2026/
-  index.html          Event landing page
-  event.css, event.js  Landing-page presentation and interactions
+  index.html          2026 recap
+  recap.css / .js     Recap styles, interactive charts, and animated counts
+  assets/recap/       Optimized recap portraits, logos, and edition photos
   program/            Program, speaker details, and software pitches
   meetups/            2026 calendar client and conference configuration
   assets/event/       Edition branding, photos, and thumbnails
@@ -35,13 +36,14 @@ backend/              Local calendar preview and tests
 cloudflare/           Production calendar Worker, database migrations, and tests
 ```
 
-The root opens the current edition. All content uses year-specific URLs; there
-are no legacy page aliases.
+The root opens the [full 2026 recap](https://munich-quantum-software.github.io/mqsf/2026/).
+Program and meet-up links remain on their year-specific archive URLs.
 
 ## 2026 archive
 
-The [2026 look back](https://mq.sc/mqsf/2026/) is hosted on MQSC’s website.
-The program and all speaker abstracts remain here. The 19 public meet-ups are
+The [2026 look back](https://munich-quantum-software.github.io/mqsf/2026/) is hosted
+here alongside the program and all speaker abstracts. The short link
+`https://mq.sc/mqsf` points to this recap. The 19 public meet-ups are
 preserved in `2026/meetups/archive.json`; no contact emails or private change
 history are included. The calendar reads this static snapshot without calling
 the editing API or polling for changes.
@@ -52,13 +54,22 @@ Cloudflare Worker as well as the static site so cached or direct API clients
 cannot keep editing. Do not clear the database or run any seed migration.
 The local tests still exercise pre-archive editing using disposable databases.
 
-Embed just the archived calendar with `/2026/program/?embed=meetups`. It keeps
-the day selector and meet-up details, forces read-only mode, and sends the parent
-`{ type: "mqsf-calendar-height", height }` when its height changes. The parent
-also receives `{ type: "mqsf-calendar-dialog", top, height }` when details open,
-so it can scroll the dialog into view. Messages contain layout dimensions only;
-the parent must validate the frame's origin and source before using them. PR previews
-also show the public archive snapshot without contacting the editing API.
+### Reusing the pre-recap site for 2027
+
+The last pre-recap version is commit
+[`2e42324289e3021743fae0851a627ad51b9be8ea`](https://github.com/munich-quantum-software/mqsf/commit/2e42324289e3021743fae0851a627ad51b9be8ea).
+It contains the complete event landing page, program, styles, scripts, and artwork.
+Export its public files into a separate folder without replacing the current archive:
+
+```sh
+git archive --format=tar.gz --prefix=mqsf-2026-before-recap/ \
+  --output=../mqsf-2026-before-recap.tar.gz \
+  2e42324289e3021743fae0851a627ad51b9be8ea index.html 2026 assets background logos
+```
+
+Use that version as the starting point for `2027/`. Keep the present read-only
+2026 program and meet-ups unchanged. Update the root redirect and the MQSC
+`/mqsf` redirect only when the new edition is ready.
 
 ## Local development
 
@@ -69,13 +80,12 @@ npm ci
 uv run --no-project python backend/server.py --demo --port 8030
 ```
 
-Open <http://127.0.0.1:8030/2026/> for the event page,
-<http://127.0.0.1:8030/2026/program/> for the program, or
+Open <http://127.0.0.1:8030/2026/> for the recap,
+<http://127.0.0.1:8030/2026/program/> for the archived program, or
 <http://127.0.0.1:8030/background/> for the animation.
 Use <http://127.0.0.1:8030/background/?theme=light> for the light wave; the same
 `theme=light` query works when embedding it in an iframe. Dark remains the standalone
-default; `theme=auto` follows the browser's color scheme. The program and event-page
-header use this automatic mode.
+default; `theme=auto` follows the browser's color scheme. The program header uses this automatic mode.
 The logos page is at <http://127.0.0.1:8030/logos/>.
 The demo calendar uses a local SQLite database, not production data.
 See [the preview guide](backend/README.md) for organizer testing and storage.
@@ -105,13 +115,16 @@ automatic preview links, and cleanup. Publishing is disabled until explicitly en
 
 ## Editing and future editions
 
+- Edit the recap in `2026/index.html`; the questionnaire figures are a fixed
+  aggregate snapshot. Replace the labelled video placeholders when recordings
+  are available. Keep the archived program as the record of the event.
 - Update speaker details in `2026/program/index.html` and pitches in
   `2026/program/script.js`. Session boundaries are explicit in `pitchSessionStarts`.
 - Keep edition-specific images and downloads within that year's directory.
   Fonts retain their license in `assets/fonts/OFL.txt`.
 - For a new edition, create its year directory from the existing pages, update
   content, dates, images, registration links, and calendar configuration, then
-  change the root's event link and refresh destination to that edition.
+  change the root's redirect, refresh destination, and fallback link to that edition.
 - The calendar backend is still **2026-specific**. A future edition requires
   its own Worker/database and client API configuration. Do not repoint the 2026
   client or reset its database. See [the production calendar guide](cloudflare/README.md).

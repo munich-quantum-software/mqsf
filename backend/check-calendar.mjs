@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { runInNewContext } from "node:vm";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import {
   layoutEvents,
@@ -42,15 +43,35 @@ function checkLinks(directory) {
 }
 for (const directory of ["2026/", "assets/", "background/", "logos/"])
   checkLinks(directory);
-const home = readSource("index.html");
-assert.match(home, /http-equiv="refresh" content="0; url=2026\/"/);
-assert(existsSync(new URL("2026/index.html", root)));
-const event = readSource("2026/index.html");
-assert.match(
-  event,
-  /<article class="past-event">\s*<h3><span class="title-mark">2026<\/span><\/h3>[\s\S]*?href="https:\/\/mq\.sc\/mqsf\/2026\/"/,
-  "The previous-events overview links to the 2026 look back",
-);
+for (const [path, program] of [["index.html", "2026/program/"]]) {
+  const page = readFileSync(new URL(path, root), "utf8");
+  assert.match(
+    page.replace(/\s+/g, " "),
+    /http-equiv="refresh" content="0; url=2026\/"/,
+  );
+  const script = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  for (const [hash, expected] of [
+    ["", "2026/"],
+    ["#events", "2026/#events"],
+    ["#registration", "2026/#overview"],
+    ["#program", program],
+    ["#day-1", `${program}#day-1`],
+    ["#day-2", `${program}#day-2`],
+    ["#side-events", `${program}#side-events`],
+  ]) {
+    for (const search of ["", "?utm_source=mqsf"]) {
+      let destination;
+      runInNewContext(script, {
+        location: { hash, search, replace: (url) => (destination = url) },
+      });
+      assert.equal(
+        destination,
+        expected.replace(/#|$/, (separator) => search + separator),
+        `${path}${search}${hash}`,
+      );
+    }
+  }
+}
 
 const programStyles = readSource("2026/program/styles.css");
 assert.match(
@@ -101,15 +122,9 @@ assert.match(
   "Meet-up introduction uses a bordered light panel",
 );
 const brandStyles = readSource("assets/brand.css");
-const eventStyles = readSource("2026/event.css");
-assert.match(
-  eventStyles,
-  /\.brand-panel \{[^}]*border: 1px solid var\(--line\);/,
-  "The hero uses the shared panel border",
-);
 const logoStyles = readSource("logos/styles.css");
 const fontSizes = [
-  ...`${brandStyles}\n${eventStyles}\n${programStyles}\n${meetupStyles}\n${logoStyles}`.matchAll(
+  ...`${brandStyles}\n${programStyles}\n${meetupStyles}\n${logoStyles}`.matchAll(
     /font-size:\s*([^;]+);/g,
   ),
 ].map((match) => match[1]);
@@ -133,11 +148,7 @@ assert.match(
   /@media \(max-width: 700px\)\s*\{\s*:root\s*\{\s*--font-heading: var\(--font-body\);/,
   "Mobile uses only the two smaller sizes",
 );
-for (const path of [
-  "2026/index.html",
-  "2026/program/index.html",
-  "logos/index.html",
-]) {
+for (const path of ["2026/program/index.html", "logos/index.html"]) {
   const html = readSource(path);
   assert.match(
     html,

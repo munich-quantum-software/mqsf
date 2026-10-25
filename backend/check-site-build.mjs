@@ -3,7 +3,193 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL, fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
+
+function checkRecap(output) {
+  const page = join(output, "2026/index.html");
+  const recap = readFileSync(page, "utf8");
+  const countClass = (tag, className) =>
+    [
+      ...recap.matchAll(new RegExp(`<${tag}\\b[^>]*class="([^"]*)"`, "g")),
+    ].filter(([, classes]) => classes.split(/\s+/).includes(className)).length;
+  assert.equal(
+    countClass("details", "talk"),
+    16,
+    "All 16 talks remain available",
+  );
+  const sessions = [
+    ...recap.matchAll(
+      /<article\b[^>]*id="pitch-session-\d+"[^>]*>([\s\S]*?)<\/article>/g,
+    ),
+  ];
+  assert.equal(sessions.length, 4, "Keep all four pitch sessions");
+  assert.equal(
+    sessions.reduce(
+      (sum, [, html]) => sum + [...html.matchAll(/<li\b/g)].length,
+      0,
+    ),
+    44,
+    "Keep all 44 pitches",
+  );
+  assert.equal(
+    countClass("section", "survey-pie") + countClass("section", "survey-bars"),
+    13,
+    "Keep all 13 structured questionnaire results",
+  );
+  assert.doesNotMatch(
+    recap,
+    /http-equiv="refresh"/i,
+    "The edition contains the recap, not another redirect",
+  );
+  assert.doesNotMatch(
+    recap,
+    /id="meetups"/,
+    "Meet-ups stay in the program archive",
+  );
+  for (const year of [2025, 2024, 2023])
+    assert(
+      recap.includes(
+        `https://www.cda.cit.tum.de/research/quantum/${year}_mqsf_summary/`,
+      ),
+      `Keep the ${year} summary link`,
+    );
+
+  const routing = readFileSync(join(output, "2026/recap.js"), "utf8").split(
+    "\nfor (const card",
+  )[0];
+  for (const prefix of ["/mqsf/2026/", "/mqsf/previews/pr-18/2026/"]) {
+    for (const [hash, expected] of [
+      ["#program", "program/?utm_source=mqsf"],
+      ["#day-2", "program/?utm_source=mqsf#day-2"],
+      ["#side-events", "program/?utm_source=mqsf#side-events"],
+      ["#registration", "?utm_source=mqsf#overview"],
+      ["#events", null],
+    ]) {
+      const href = `https://munich-quantum-software.github.io${prefix}?utm_source=mqsf${hash}`;
+      let destination;
+      runInNewContext(routing, {
+        URL,
+        location: {
+          href,
+          hash,
+          search: "?utm_source=mqsf",
+          pathname: prefix,
+          replace: (value) => (destination = new URL(value, href).href),
+        },
+      });
+      assert.equal(
+        destination,
+        expected === null ? undefined : new URL(expected, href).href,
+        `Keep legacy recap link ${href}`,
+      );
+    }
+  }
+
+  const pageUrl = pathToFileURL(page);
+  const references = [...recap.matchAll(/\b(?:href|src)="([^"]+)"/g)].map(
+    (match) => match[1],
+  );
+  for (const reference of references) {
+    if (/^(?:https?:|mailto:|data:)/.test(reference)) continue;
+    assert(
+      !reference.startsWith("/"),
+      `Use preview-safe relative URL: ${reference}`,
+    );
+    const url = new URL(reference, pageUrl);
+    const target = fileURLToPath(url);
+    assert(
+      existsSync(target),
+      `Recap is missing local asset or page: ${reference}`,
+    );
+    if (reference.startsWith("#"))
+      assert(
+        recap.includes(`id="${reference.slice(1)}"`),
+        `Missing recap anchor: ${reference}`,
+      );
+    if (url.pathname.endsWith(".css")) {
+      for (const [, asset] of readFileSync(target, "utf8").matchAll(
+        /url\(["']?([^)'"\s]+)/g,
+      )) {
+        if (/^(?:https?:|data:|#)/.test(asset)) continue;
+        assert(!asset.startsWith("/"), `Use preview-safe CSS URL: ${asset}`);
+        assert(
+          existsSync(fileURLToPath(new URL(asset, url))),
+          `Missing recap CSS asset: ${asset}`,
+        );
+      }
+    }
+  }
+}
+
+const recapScript = readFileSync("2026/recap.js", "utf8");
+const counterScript =
+  recapScript.slice(
+    recapScript.indexOf("function countHighlights()"),
+    recapScript.indexOf("\ncountHighlights();"),
+  ) + "\ncountHighlights();";
+for (const scenario of ["reduced motion", "complete", "preference change"]) {
+  const counter = {
+    textContent: "400",
+    dataset: { count: "400", decimals: "0" },
+  };
+  let intersect,
+    frame,
+    preferenceChange,
+    disconnected = false;
+  const motion = {
+    matches: scenario === "reduced motion",
+    addEventListener: (_, listener) => (preferenceChange = listener),
+  };
+  class IntersectionObserver {
+    constructor(callback) {
+      intersect = callback;
+    }
+    observe(element) {
+      assert.equal(element, counter);
+    }
+    unobserve() {}
+    disconnect() {
+      disconnected = true;
+    }
+  }
+  runInNewContext(counterScript, {
+    document: { querySelectorAll: () => [counter], addEventListener() {} },
+    window: { matchMedia: () => motion, IntersectionObserver },
+    IntersectionObserver,
+    performance: { now: () => 0 },
+    requestAnimationFrame: (callback) => {
+      frame = callback;
+      return 1;
+    },
+    cancelAnimationFrame: () => {
+      frame = undefined;
+    },
+  });
+  if (scenario === "reduced motion") {
+    assert.equal(counter.textContent, "400");
+    assert.equal(intersect, undefined);
+    assert.equal(frame, undefined);
+    continue;
+  }
+  intersect([{ target: counter, isIntersecting: false }]);
+  assert.equal(counter.textContent, "400");
+  intersect([{ target: counter, isIntersecting: true }]);
+  assert.equal(counter.textContent, "0");
+  frame(1750);
+  assert(Number(counter.textContent) > 0 && Number(counter.textContent) < 400);
+  if (scenario === "complete") {
+    const finish = frame;
+    frame = undefined;
+    finish(3500);
+  } else {
+    motion.matches = true;
+    preferenceChange();
+    assert(disconnected);
+  }
+  assert.equal(counter.textContent, "400");
+  assert.equal(frame, undefined, "Finished counters leave no queued animation");
+}
 
 const directory = mkdtempSync(join(tmpdir(), "mqsf-site-test-"));
 try {
@@ -26,6 +212,13 @@ try {
       assert(existsSync(join(output, path)), path);
     }
     assert.equal(existsSync(join(output, ".nojekyll")), !preview);
+    checkRecap(output);
+    assert.equal(
+      JSON.parse(
+        readFileSync(join(output, "2026/meetups/conference.json"), "utf8"),
+      ).archived,
+      true,
+    );
     for (const path of [
       "backend",
       "cloudflare",
@@ -71,7 +264,7 @@ try {
   await assert.rejects(call("/organizer", { method: "POST" }), /read-only/);
 
   const archive = JSON.parse(readFileSync("2026/meetups/archive.json", "utf8"));
-  assert(archive.events.length > 0);
+  assert.equal(archive.events.length, 19, "Keep all archived meet-ups");
   for (const event of archive.events) {
     assert.equal(Object.hasOwn(event, "contact_email"), false);
     assert(["2026-10-14", "2026-10-15"].includes(event.date));
@@ -103,57 +296,6 @@ try {
     fetched,
     Array(2).fill("https://archive.example/2026/meetups/archive.json"),
   );
-  const embeddedContext = {
-    config: null,
-    URLSearchParams,
-    location: { search: "?embed=meetups" },
-    fetch: async () => ({ ok: true, json: async () => ({ archived: false }) }),
-    URL,
-    $: () => ({}),
-    organizerLink() {},
-    renderCalendar() {},
-    async refresh() {},
-  };
-  const initialize = source
-    .slice(source.indexOf("async function initialize()"))
-    .split("\nchooseDay(selectedDay);")[0]
-    .replace("import.meta.url", '"https://archive.example/app.mjs"');
-  await runInNewContext(`${initialize}; initialize`, embeddedContext)();
-  assert.equal(
-    embeddedContext.config.archived,
-    true,
-    "Embedded calendars remain read-only even with a non-archive configuration",
-  );
-  const dialogMessages = [];
-  let dialogOpen = false;
-  const openDetails = source.slice(
-    source.indexOf("function openDetails("),
-    source.indexOf("\nfunction draft("),
-  );
-  runInNewContext(`${openDetails}; openDetails`, {
-    events: [{ id: "public-event" }],
-    showDetails() {},
-    details: {
-      showModal() {
-        dialogOpen = true;
-      },
-      getBoundingClientRect() {
-        return { top: 250.2, height: 700.1 };
-      },
-    },
-    document: { documentElement: { dataset: { embed: "meetups" } } },
-    window: {
-      parent: {
-        postMessage: (data) =>
-          dialogMessages.push(JSON.parse(JSON.stringify(data))),
-      },
-    },
-  })("public-event");
-  assert(dialogOpen);
-  assert.deepEqual(dialogMessages, [
-    { type: "mqsf-calendar-dialog", top: 250, height: 701 },
-  ]);
-
   const wave = readFileSync("assets/waves.js", "utf8");
   let darkPoints;
   for (const [search, light] of [
@@ -278,7 +420,7 @@ try {
         );
       }
     }
-  for (const path of ["2026/index.html", "2026/program/index.html"]) {
+  for (const path of ["2026/program/index.html"]) {
     assert(
       readFileSync(path, "utf8").includes(
         "background/index.html?v=7&amp;theme=auto",
@@ -301,7 +443,6 @@ try {
     document: programDocument,
     matchMedia: () => colorScheme,
     location: { hash: "" },
-    URLSearchParams,
     window: { addEventListener() {} },
   });
   assert.equal(programDocument.documentElement.dataset.theme, "dark");
@@ -315,46 +456,6 @@ try {
   colorScheme.matches = false;
   colorScheme.change();
   assert.equal(programDocument.documentElement.dataset.theme, "dark");
-  const messages = [];
-  let calendarHeight = 1200;
-  let resize;
-  const calendar = {
-    getBoundingClientRect: () => ({ height: calendarHeight }),
-  };
-  const embeddedDocument = {
-    ...programDocument,
-    documentElement: { dataset: {} },
-    getElementById: (id) => (id === "side-events" ? calendar : null),
-  };
-  runInNewContext(readFileSync("2026/program/script.js", "utf8"), {
-    document: embeddedDocument,
-    matchMedia: () => colorScheme,
-    location: { hash: "", search: "?embed=meetups" },
-    URLSearchParams,
-    ResizeObserver: class {
-      constructor(callback) {
-        resize = callback;
-      }
-      observe(element) {
-        assert.equal(element, calendar);
-      }
-    },
-    window: {
-      addEventListener() {},
-      parent: {
-        postMessage: (data) => messages.push(JSON.parse(JSON.stringify(data))),
-      },
-    },
-  });
-  assert.equal(embeddedDocument.documentElement.dataset.embed, "meetups");
-  assert.equal(embeddedDocument.documentElement.dataset.theme, "light");
-  resize();
-  calendarHeight = 1260.2;
-  resize();
-  assert.deepEqual(messages, [
-    { type: "mqsf-calendar-height", height: 1200 },
-    { type: "mqsf-calendar-height", height: 1261 },
-  ]);
   console.log(
     "Site packaging checks passed: public files only, unchanged production, isolated read-only previews.",
   );

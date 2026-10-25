@@ -136,7 +136,7 @@ jobs:
           script: |
             const marker = '<!-- mqsf-preview -->';
             const url = `${process.env.PAGE_URL.replace(/\/$/, '')}/previews/pr-${context.issue.number}/`;
-            const body = `${marker}\n${process.env.MODE === 'remove' ? 'Preview removed because this PR is closed.' : `Preview: ${url}\n\nRead-only calendar; archived public meet-ups only. Updated for ${context.payload.pull_request.head.sha}.`}`;
+            const body = `${marker}\n${process.env.MODE === 'remove' ? 'Preview removed because this PR is closed.' : `Recap preview: ${url}2026/\n\nProgram archive: ${url}2026/program/\n\nRead-only calendar; archived public meet-ups only. Updated for ${context.payload.pull_request.head.sha}.`}`;
             const params = { ...context.repo, issue_number: context.issue.number };
             const comments = await github.paginate(github.rest.issues.listComments, params);
             const existing = comments.find(comment => comment.user.type === 'Bot' && comment.body.includes(marker));
