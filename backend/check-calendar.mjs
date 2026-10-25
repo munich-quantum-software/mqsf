@@ -49,7 +49,7 @@ for (const [path, program] of [["index.html", "2026/program/"]]) {
     page.replace(/\s+/g, " "),
     /http-equiv="refresh" content="0; url=2026\/"/,
   );
-  const script = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  const script = page.match(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/i)[1];
   for (const [hash, expected] of [
     ["", "2026/"],
     ["#events", "2026/#events"],
