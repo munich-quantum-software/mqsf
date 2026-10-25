@@ -87,8 +87,9 @@ Use <http://127.0.0.1:8030/background/?theme=light> for the light wave; the same
 `theme=light` query works when embedding it in an iframe. Dark remains the standalone
 default; `theme=auto` follows the browser's color scheme. The program header uses this automatic mode.
 The logos page is at <http://127.0.0.1:8030/logos/>.
-The demo calendar uses a local SQLite database, not production data.
-See [the preview guide](backend/README.md) for organizer testing and storage.
+The local calendar is read-only too, including with `--demo`. For editing work,
+use the [pre-recap version](#reusing-the-pre-recap-site-for-2027).
+See [the preview guide](backend/README.md) for local checks and historical storage details.
 
 ```sh
 npm run format

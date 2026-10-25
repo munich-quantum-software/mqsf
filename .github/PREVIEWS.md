@@ -51,7 +51,8 @@ generated storage, not source code. Website content still lives on `main`.
   Archived editions load only their public static snapshot; other editions show
   an empty, labelled calendar. Neither makes editing API requests.
   Creating, editing, deleting, and organizer sign-in are rejected as read-only.
-  Use the existing local demo for full interactive calendar testing.
+  The current local demo is also archived. For interactive editing tests, use
+  the [pre-recap version](../README.md#reusing-the-pre-recap-site-for-2027).
 - Preview HTML has `noindex, nofollow`. This discourages indexing, not access.
 - Production configuration, API behavior, database, and deployment remain unchanged
   apart from publishing the same static site through Actions.
