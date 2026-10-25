@@ -7,7 +7,11 @@
       name="viewport"
       content="width=device-width, initial-scale=1"
     />
-    <title>Munich Quantum Software Forum</title>
+    <title>MQSF 2026 — Summary and Recordings</title>
+    <meta
+      name="description"
+      content="Look back at the Munich Quantum Software Forum 2026."
+    />
     <link
       rel="icon"
       type="image/svg+xml"
@@ -15,7 +19,18 @@
       href="assets/images/brand/logo-q-light.svg?v=1"
     />
     <script>
-      location.replace("2026/" + location.hash);
+      const hash = location.hash;
+      if (["#program", "#day-1", "#day-2", "#side-events"].includes(hash)) {
+        location.replace(
+          "2026/program/" + location.search + (hash === "#program" ? "" : hash),
+        );
+      } else {
+        location.replace(
+          "2026/" +
+            location.search +
+            (hash === "#registration" ? "#overview" : hash),
+        );
+      }
     </script>
     <noscript
       ><meta
@@ -24,7 +39,7 @@
     /></noscript>
   </head>
   <body>
-    <p><a href="2026/">Visit MQSF 2026</a>.</p>
+    <p><a href="2026/">MQSF 2026 summary and recordings</a>.</p>
     <p><a href="2026/program/">2026 program and meet-ups</a>.</p>
   </body>
 </html>
