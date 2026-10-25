@@ -6,7 +6,6 @@
   --paper: #f3f5f8;
   --surface: #fff;
   --card: #f3f5f8;
-  --snap-offset: 0px;
   font-family: Poppins, system-ui, sans-serif;
   font-weight: 300;
   color: var(--ink);
@@ -26,9 +25,6 @@
 }
 .mqsf-page :is(h1, h2, h3, h4, strong, b) {
   font-weight: 500;
-}
-.mqsf-page button {
-  font-family: inherit;
 }
 .mqsf-page .mqsf-toolbar {
   padding-block: 0.65rem;
@@ -94,15 +90,8 @@
   isolation: isolate;
   padding: clamp(2rem, 5vw, 4rem) 0;
   background-color: #17213c;
-  background-size: cover;
-  background-position: center;
 }
 .recap-background {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   z-index: -1;
 }
 .recap-brand {
@@ -235,9 +224,6 @@
   border: 0;
   min-width: 0;
 }
-.recap .survey-view-switch[hidden] {
-  display: none;
-}
 .recap .survey-view-switch legend {
   margin-bottom: 0.65rem;
   font-size: 0.85rem;
@@ -281,11 +267,6 @@
   font-size: 1.2rem;
   color: var(--blue);
   margin: 1rem 0 0;
-}
-.recap-data-note {
-  margin-top: 1.5rem;
-  color: var(--muted);
-  font-size: 0.8rem;
 }
 .recap-partners {
   display: flex;
@@ -467,7 +448,8 @@
 
 /* survey-pie */
 
-.survey-pie {
+.survey-pie,
+.survey-bars {
   min-width: 0;
   padding: 1.2rem;
   background: var(--card);
@@ -494,7 +476,8 @@
   stroke: var(--card);
   stroke-width: 2;
 }
-.survey-pie ul {
+.survey-pie ul,
+.survey-bars ul {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -512,7 +495,6 @@
   background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
-  font-family: inherit;
   text-align: left;
 }
 .survey-pie .survey-legend button:not(:disabled) {
@@ -535,9 +517,6 @@
 .survey-pie path.is-selected {
   stroke: var(--ink);
   stroke-width: 3;
-}
-.survey-pie li + li {
-  margin-top: 0;
 }
 .survey-pie .survey-detail {
   min-height: 3em;
@@ -588,7 +567,8 @@
   width: 0.75rem;
   height: 0.75rem;
 }
-.survey-pie strong {
+.survey-pie strong,
+.survey-bars strong {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -612,8 +592,6 @@
   .survey-pie .survey-graphic {
     margin-block: 0.5rem;
   }
-}
-@media (max-width: 400px) {
   .survey-pie {
     padding: 1.25rem;
   }
@@ -621,13 +599,6 @@
 
 /* survey-bars */
 
-.survey-bars {
-  min-width: 0;
-  padding: 1.2rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--card);
-}
 .survey-bars h4 {
   margin: 0 0 0.4rem;
   font-size: 1rem;
@@ -643,11 +614,6 @@
   margin: 0.5rem 0 0.8rem;
   font-size: 0.72rem;
   color: var(--muted);
-}
-.survey-bars ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
 }
 .survey-bars li {
   position: relative;
@@ -671,10 +637,6 @@
   align-items: baseline;
   font-size: 0.78rem;
   line-height: 1.45;
-}
-.survey-bars strong {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 .survey-bars small {
   color: var(--muted);

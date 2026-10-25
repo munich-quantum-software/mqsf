@@ -74,13 +74,7 @@ function countHighlights() {
         const element = entry.target;
         observer.unobserve(element);
         const target = Number(element.dataset.count);
-        const digits = Number(element.dataset.decimals);
-        const suffix = element.dataset.suffix ?? "";
-        const final = element.textContent ?? "";
-        const formatter = new Intl.NumberFormat("en-US", {
-          minimumFractionDigits: digits,
-          maximumFractionDigits: digits,
-        });
+        const final = element.textContent;
         const start = performance.now();
         const run = { frame: 0, final };
         active.set(element, run);
@@ -91,8 +85,7 @@ function countHighlights() {
             active.delete(element);
             return;
           }
-          element.textContent =
-            formatter.format(target * (1 - (1 - progress) ** 3)) + suffix;
+          element.textContent = (target * (1 - (1 - progress) ** 3)).toFixed(0);
           run.frame = requestAnimationFrame(tick);
         };
         tick(start);
