@@ -118,13 +118,16 @@ automatic preview links, and cleanup. Publishing is disabled until explicitly en
 
 - Edit the recap in `2026/index.html`; the questionnaire figures are a fixed
   aggregate snapshot. All 12 published questions use respondent percentages
-  with their individual denominators; the location results are omitted.
+  with their individual denominators; the location results are omitted. Four
+  participant-background questions and three interest questions are visible at
+  first; the remaining five are under “More questionnaire results”.
 - Replace the labeled video placeholders when the 2026 recordings are supplied
   (16 talks, four pitch sessions, and the summary video). Keep videos outside the
   abstract/biography disclosures. Use YouTube's existing thumbnails initially;
   custom thumbnails are optional and can be set by the channel owner.
 - Add a photo section only once an approved 2026 album or download link is
-  available. Do not substitute previous-edition photos or publish an empty section.
+  available. Use a small gallery with a link to the full album or download.
+  Do not substitute previous-edition photos or publish an empty section.
 - Keep the archived program as the record of the event, including its schedule,
   presentation details, and public meet-ups.
 - Update speaker details in `2026/program/index.html` and pitches in
