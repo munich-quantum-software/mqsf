@@ -20,8 +20,8 @@ Download or copy MQSF artwork from the [logos page](https://munich-quantum-softw
 ```text
 2026/
   index.html          2026 recap
-  recap.css / .js     Recap styles, interactive charts, and animated counts
-  assets/recap/       Optimized recap portraits, logos, and edition photos
+  recap.css / .js     Recap styles and animated counts
+  assets/recap/       Optimized speaker portraits and earlier-edition thumbnails
   program/            Program, speaker details, and software pitches
   meetups/            2026 calendar client and conference configuration
   assets/event/       Edition branding, photos, and thumbnails
@@ -117,8 +117,16 @@ automatic preview links, and cleanup. Publishing is disabled until explicitly en
 ## Editing and future editions
 
 - Edit the recap in `2026/index.html`; the questionnaire figures are a fixed
-  aggregate snapshot. Replace the labelled video placeholders when recordings
-  are available. Keep the archived program as the record of the event.
+  aggregate snapshot. All 12 published questions use respondent percentages
+  with their individual denominators; the location results are omitted.
+- Replace the labeled video placeholders when the 2026 recordings are supplied
+  (16 talks, four pitch sessions, and the summary video). Keep videos outside the
+  abstract/biography disclosures. Use YouTube's existing thumbnails initially;
+  custom thumbnails are optional and can be set by the channel owner.
+- Add a photo section only once an approved 2026 album or download link is
+  available. Do not substitute previous-edition photos or publish an empty section.
+- Keep the archived program as the record of the event, including its schedule,
+  presentation details, and public meet-ups.
 - Update speaker details in `2026/program/index.html` and pitches in
   `2026/program/script.js`. Session boundaries are explicit in `pitchSessionStarts`.
 - Keep edition-specific images and downloads within that year's directory.

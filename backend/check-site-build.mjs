@@ -14,7 +14,7 @@ function checkRecap(output) {
       ...recap.matchAll(new RegExp(`<${tag}\\b[^>]*class="([^"]*)"`, "g")),
     ].filter(([, classes]) => classes.split(/\s+/).includes(className)).length;
   assert.equal(
-    countClass("details", "talk"),
+    countClass("article", "talk-card"),
     16,
     "All 16 talks remain available",
   );
@@ -33,10 +33,11 @@ function checkRecap(output) {
     "Keep all 44 pitches",
   );
   assert.equal(
-    countClass("section", "survey-pie") + countClass("section", "survey-bars"),
-    13,
-    "Keep all 13 structured questionnaire results",
+    countClass("section", "survey-bars"),
+    12,
+    "Keep all structured questionnaire results except location",
   );
+  assert.doesNotMatch(recap, /aria-label="Location"/, "Omit location results");
   assert.doesNotMatch(
     recap,
     /http-equiv="refresh"/i,
@@ -56,7 +57,7 @@ function checkRecap(output) {
     );
 
   const routing = readFileSync(join(output, "2026/recap.js"), "utf8").split(
-    "\nfor (const card",
+    "\nfunction countHighlights()",
   )[0];
   for (const prefix of ["/mqsf/2026/", "/mqsf/previews/pr-18/2026/"]) {
     for (const [hash, expected] of [

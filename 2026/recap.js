@@ -14,48 +14,6 @@ if (legacyTarget) {
   location.replace(`${location.pathname}${location.search}#overview`);
 }
 
-for (const card of document.querySelectorAll(".survey-pie")) {
-  const buttons = [...card.querySelectorAll(".survey-legend button")];
-  const paths = [...card.querySelectorAll(".survey-graphic path")];
-  const status = card.querySelector(".survey-detail");
-  const hint = status.textContent;
-  let selected = null;
-  function select(index) {
-    selected = selected === index ? null : index;
-    card.toggleAttribute("data-selected", selected !== null);
-    buttons.forEach((button, i) => {
-      button.setAttribute("aria-pressed", String(i === selected));
-      paths[i].classList.toggle("is-selected", i === selected);
-    });
-    status.textContent =
-      selected === null ? hint : buttons[selected].dataset.detail;
-  }
-  buttons.forEach((button, index) => {
-    button.disabled = false;
-    button.addEventListener("click", () => select(index));
-    paths[index].addEventListener("click", () => select(index));
-  });
-  card.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") select(null);
-  });
-  card.dataset.interactive = "true";
-  status.hidden = false;
-}
-const viewSwitch = document.querySelector(".survey-view-switch");
-if (viewSwitch) {
-  const inputs = [...viewSwitch.querySelectorAll("input")];
-  const cards = document.querySelectorAll(".survey-pie");
-  function updateView() {
-    const view = inputs.find((input) => input.checked).value;
-    cards.forEach((card) => {
-      card.dataset.view = view;
-    });
-  }
-  inputs.forEach((input) => input.addEventListener("change", updateView));
-  updateView();
-  viewSwitch.hidden = false;
-}
-
 function countHighlights() {
   const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const active = new Map();
