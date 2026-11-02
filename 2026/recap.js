@@ -64,3 +64,31 @@ function countHighlights() {
   });
 }
 countHighlights();
+
+function setupPhotoGallery() {
+  const gallery = document.querySelector("[data-photo-gallery]");
+  if (!gallery) return;
+  const track = gallery.querySelector(".photo-gallery-track");
+  const viewport = gallery.querySelector(".photo-gallery-window");
+  const button = gallery.querySelector(".photo-gallery-pause");
+  const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const duplicate = track.firstElementChild.cloneNode(true);
+  duplicate.setAttribute("aria-hidden", "true");
+  duplicate.inert = true;
+  track.append(duplicate);
+  let paused = false;
+  button.addEventListener("click", () => {
+    paused = !paused;
+    gallery.toggleAttribute("data-paused", paused);
+    button.textContent = paused ? "Resume scrolling" : "Pause scrolling";
+  });
+  const updateMotion = () => {
+    gallery.toggleAttribute("data-animated", !motion.matches);
+    button.hidden = motion.matches;
+    viewport.tabIndex = motion.matches ? 0 : -1;
+    viewport.scrollLeft = 0;
+  };
+  motion.addEventListener("change", updateMotion);
+  updateMotion();
+}
+setupPhotoGallery();

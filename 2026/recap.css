@@ -826,3 +826,109 @@
     height: calc(76px * var(--tier-scale));
   }
 }
+
+/* A static, scrollable strip until JavaScript enables the looping preview. */
+.photo-gallery {
+  --photo-height: clamp(200px, 24vw, 280px);
+  --photo-gap: var(--space-24);
+}
+.photo-gallery-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  margin-bottom: var(--space-24);
+}
+.photo-gallery-toolbar p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--font-small);
+}
+.photo-gallery-pause {
+  min-height: var(--control-height);
+  padding: var(--space-8) var(--space-16);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--blue);
+  font: inherit;
+  font-size: var(--font-small);
+  font-weight: 500;
+  cursor: pointer;
+}
+.photo-gallery-pause:hover {
+  text-decoration: underline;
+}
+.photo-gallery-window {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.photo-gallery-track,
+.photo-gallery-group {
+  display: flex;
+  width: max-content;
+}
+.photo-gallery-group {
+  flex-shrink: 0;
+  gap: var(--photo-gap);
+  padding-right: var(--photo-gap);
+}
+.photo-gallery-group[aria-hidden="true"] {
+  display: none;
+}
+.photo-card {
+  flex: none;
+  width: calc(var(--photo-height) * 1.4);
+  margin: 0;
+}
+.photo-card--portrait {
+  width: calc(var(--photo-height) * 0.85);
+}
+.photo-card img {
+  display: block;
+  width: 100%;
+  height: var(--photo-height);
+  object-fit: cover;
+  border-radius: var(--radius);
+}
+.photo-card figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding-block: var(--space-8);
+  font-size: var(--font-small);
+}
+.photo-card figcaption span {
+  color: var(--muted);
+}
+.photo-gallery[data-animated] .photo-gallery-window {
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 24px,
+    #000 calc(100% - 24px),
+    transparent
+  );
+}
+.photo-gallery[data-animated] .photo-gallery-track {
+  animation: gallery-drift 70s linear infinite;
+}
+.photo-gallery[data-animated] .photo-gallery-group[aria-hidden="true"] {
+  display: flex;
+}
+.photo-gallery[data-paused] .photo-gallery-track {
+  animation-play-state: paused;
+}
+@media (hover: hover) {
+  .photo-gallery-window:hover .photo-gallery-track {
+    animation-play-state: paused;
+  }
+}
+@keyframes gallery-drift {
+  to {
+    transform: translateX(-50%);
+  }
+}

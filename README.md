@@ -125,9 +125,13 @@ automatic preview links, and cleanup. Publishing is disabled until explicitly en
   (16 talks, four pitch sessions, and the summary video). Keep videos outside the
   abstract/biography disclosures. Use YouTube's existing thumbnails initially;
   custom thumbnails are optional and can be set by the channel owner.
-- Add a photo section only once an approved 2026 album or download link is
-  available. Use a small gallery with a link to the full album or download.
-  Do not substitute previous-edition photos or publish an empty section.
+- The Photos section is a gallery prototype with clearly labeled SVG placeholders.
+  It moves right to left, pauses on hover or with its control, and becomes a
+  manually scrollable strip for reduced motion or without JavaScript.
+  Replace the six original figures with approved 2026 photos and accurate alt
+  text/captions, remove the placeholder labels, and add the full album/download
+  link once supplied. JavaScript creates the decorative loop copy automatically;
+  do not duplicate the figures in HTML or substitute previous-edition photos.
 - Keep the archived program as the record of the event, including its schedule,
   presentation details, and public meet-ups.
 - Update speaker details in `2026/program/index.html` and pitches in
