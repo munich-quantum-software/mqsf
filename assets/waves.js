@@ -223,14 +223,9 @@
     }
 
     const blurLevels = [1.2, 1.8, 2.6, 4.5, 7, 10, 14, 19];
-    const layers = blurLevels.map(() => {
-      const layer = document.createElement("canvas");
-      layer.setAttribute("aria-hidden", "true");
-      layer.hidden = true;
-      return { canvas: layer, paint: layer.getContext("2d") };
-    });
-    if (layers.some((layer) => !layer.paint)) return;
-    layers.forEach((layer) => canvas.parentElement.append(layer.canvas));
+    const layer = document.createElement("canvas");
+    const paint = layer.getContext("2d");
+    if (!paint) return;
     const buckets = blurLevels.map(() => []);
     const bucket = (value) =>
       blurLevels.reduce(
@@ -255,10 +250,7 @@
     function draw() {
       const useStaticImage = reducedMotion.matches && !light;
       canvas.hidden = useStaticImage;
-      layers.forEach((layer) => {
-        layer.canvas.hidden = useStaticImage;
-      });
-      if (useStaticImage) return;
+      if (useStaticImage || !width || !height) return;
       const unit = side / 1000;
       const offsetX = (width - side) / 2;
       const offsetY = (height - side) / 2;
@@ -281,12 +273,16 @@
       background.addColorStop(1, backgroundColors[2]);
       context.fillStyle = background;
       context.fillRect(0, 0, width, height);
+      context.save();
+      // Draw only the blurred shadow of each depth layer onto the visible
+      // canvas. Separate CSS-filtered canvases show tile seams in Safari.
+      const ink = light ? "#bfd6e4" : "#1d3951";
+      context.shadowColor = ink;
+      context.shadowOffsetX = width;
+      paint.fillStyle = paint.strokeStyle = ink;
+      paint.lineCap = "round";
       buckets.forEach((items, i) => {
-        const { paint } = layers[i];
         paint.clearRect(0, 0, width, height);
-        // Opaque, pre-blended color keeps overlapping lines and nodes the same color.
-        paint.fillStyle = paint.strokeStyle = light ? "#bfd6e4" : "#1d3951";
-        paint.lineCap = "round";
         items.forEach((item) => {
           if (item.index !== undefined) {
             const node = nodes[item.index];
@@ -313,7 +309,10 @@
             paint.stroke();
           }
         });
+        context.shadowBlur = 2 * blurLevels[i] * unit;
+        context.drawImage(layer, -width, 0);
       });
+      context.restore();
     }
 
     function resize() {
@@ -322,11 +321,8 @@
       width = canvas.width = Math.round(rect.width * ratio);
       height = canvas.height = Math.round(rect.height * ratio);
       side = Math.max(width, height);
-      layers.forEach((layer, i) => {
-        layer.canvas.width = width;
-        layer.canvas.height = height;
-        layer.canvas.style.filter = `blur(${(blurLevels[i] * side) / ratio / 1000}px)`;
-      });
+      layer.width = width;
+      layer.height = height;
       draw();
     }
     function animate(now) {

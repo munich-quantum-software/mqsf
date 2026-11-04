@@ -310,6 +310,7 @@ try {
       const points = [];
       const layers = [];
       let frames = 0;
+      let drewWave = false;
       let preferenceChange;
       const colorScheme = {
         matches: search === "?theme=auto" ? light : !light,
@@ -323,6 +324,11 @@ try {
         }),
         fillRect() {},
         clearRect() {},
+        save() {},
+        restore() {},
+        drawImage() {
+          drewWave = true;
+        },
         beginPath() {},
         fill() {},
         moveTo() {},
@@ -342,11 +348,7 @@ try {
         hidden: false,
         addEventListener() {},
         querySelectorAll: () => [canvas],
-        createElement: () => ({
-          getContext: () => paint,
-          setAttribute() {},
-          style: {},
-        }),
+        createElement: () => ({ getContext: () => paint }),
       };
       runInNewContext(wave, {
         document,
@@ -371,7 +373,12 @@ try {
         "Reduced motion schedules no animation",
       );
       assert.equal(canvas.hidden, reduced && !light);
-      assert(layers.every((layer) => layer.hidden === canvas.hidden));
+      assert.equal(drewWave, !canvas.hidden);
+      assert.equal(
+        layers.length,
+        0,
+        "Composite the wave on one visible canvas",
+      );
       if (reduced && !light) {
         assert.equal(
           points.length,
@@ -423,7 +430,7 @@ try {
     }
   assert(
     readFileSync("2026/program/index.html", "utf8").includes(
-      "background/index.html?v=7&amp;theme=auto",
+      "background/index.html?v=8&amp;theme=auto",
     ),
     "The program follows the browser color scheme",
   );
