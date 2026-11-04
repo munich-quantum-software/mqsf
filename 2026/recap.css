@@ -130,33 +130,24 @@
   margin-top: 0;
 }
 .recap-navigation {
-  position: sticky;
-  top: 0;
-  z-index: 10;
   display: flex;
-  align-items: center;
-  gap: var(--space-24);
-  overflow-x: auto;
-  padding: var(--space-8) max(var(--gutter), calc((100% - 1160px) / 2));
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  scrollbar-width: thin;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-8) var(--space-24);
+  font-size: var(--font-small);
+  font-weight: var(--weight-heading);
 }
 .recap-navigation a {
-  flex-shrink: 0;
-  white-space: nowrap;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  min-height: 3rem;
-  padding-block: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--blue);
-  text-decoration: none;
-  text-underline-offset: 0.3em;
+  min-height: var(--control-height);
+  color: inherit;
+  text-decoration-color: var(--accent);
 }
-.recap-navigation a:hover {
-  text-decoration: underline;
+@media (max-width: 640px) {
+  .recap-navigation {
+    column-gap: var(--space-16);
+  }
 }
 .recap-section {
   padding: var(--section-space) max(var(--gutter), calc((100% - 1160px) / 2));
@@ -165,10 +156,7 @@
   background: var(--paper);
 }
 .recap [id] {
-  scroll-margin-top: 6rem;
-}
-.recap-section[id] {
-  scroll-margin-top: 4rem;
+  scroll-margin-top: var(--space-16);
 }
 .recap h2 {
   width: fit-content;
@@ -524,7 +512,6 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  scroll-margin-top: 6rem;
 }
 .talks-grid .video-placeholder {
   border: 0;
@@ -586,9 +573,6 @@
 }
 .talk-content p:last-child {
   margin-bottom: 0;
-}
-.pitch-sessions article {
-  scroll-margin-top: 6rem;
 }
 @media (max-width: 900px) {
   .recordings-index ul {
