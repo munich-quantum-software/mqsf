@@ -1,5 +1,12 @@
 # Cloudflare hosting
 
+MQSF 2026 is now archived. The client uses the public snapshot in
+`2026/meetups/archive.json`; the Worker rejects all event mutations when
+`conference.archived` is true. Run the normal Worker deployment after merging
+this change to protect already-open and direct API clients too. No database
+migration, deletion, or secret changes are needed. Keep the private database
+and change history out of the static archive.
+
 GitHub Pages serves the website. A Cloudflare Worker handles `/api/meetups` and saves events in D1.
 The deployed API is <https://mqsf-2026-calendar.mqsf-2026-program.workers.dev/api/meetups>.
 The old `/api/events` route remains an alias for open tabs. New clients use `/api/meetups` to avoid

@@ -1,5 +1,21 @@
 # Year-based site migration
 
+## 2026 recap cutover
+
+The complete recap replaces the event landing page at `/2026/`. The GitHub Pages
+root continues to open that edition. `https://mq.sc/mqsf` points here; the full
+recap is not hosted on the MQSC company website.
+
+The program and meet-ups remain available at `/2026/program/`. Program and
+meet-up fragments on the site root still open that archive; `#registration`
+opens the recap overview and `#events` opens its previous editions section.
+Publish this recap before switching the company and CDA links to it.
+
+The original event site is preserved at the commit documented in the
+[README](README.md#reusing-the-pre-recap-site-for-2027). The migration instructions
+below describe the earlier year-based restructuring and do not need to be run
+again for the recap.
+
 ## Breaking URL changes
 
 This PR intentionally removes old page aliases. After merging:

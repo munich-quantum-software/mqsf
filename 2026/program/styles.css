@@ -84,14 +84,6 @@ html {
   color: var(--brand-white);
   background: var(--brand-blue);
 }
-.register-link {
-  color: var(--brand-white);
-  background: var(--brand-blue);
-}
-.register-link:hover,
-.register-link:focus-visible {
-  background: var(--brand-navy);
-}
 .content {
   position: relative;
   z-index: 1;
@@ -477,9 +469,6 @@ h2 {
     flex-direction: column;
     align-items: flex-end;
     gap: var(--space-8);
-  }
-  .register-link {
-    display: none;
   }
   .content {
     padding-top: calc(96px + var(--space-24));

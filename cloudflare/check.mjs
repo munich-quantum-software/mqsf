@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { getPlatformProxy, unstable_splitSqlQuery } from "wrangler";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import worker from "./worker.mjs";
+import conference from "../2026/meetups/conference.json" with { type: "json" };
 import { notifyChanges, discordMessages } from "./notifications.mjs";
 import { restoreSQL, assignTableSQL } from "./moderate.mjs";
 
@@ -49,6 +50,19 @@ try {
   await apply("./migrations/0004_parallel_session_limit.sql");
   await apply("./migrations/0005_table_assignments.sql");
   assert.deepEqual((await request()).data, { events: [], demo: false });
+  assert.equal(conference.archived, true);
+  for (const route of ["/api/meetups", "/api/events"]) {
+    for (const method of ["POST", "PUT", "DELETE"]) {
+      const target =
+        method === "POST"
+          ? route
+          : `${route}/00000000-0000-4000-8000-000000000000`;
+      assert.equal((await request(method, target, {})).status, 403);
+    }
+  }
+  assert.deepEqual((await request()).data.events, []);
+  conference.archived = false; // Exercise pre-archive editing behavior below.
+
   const draft = {
     date: "2026-10-14",
     start: "10:00",

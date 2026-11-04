@@ -24,6 +24,7 @@ const organizerDialog = $("organizer-dialog");
 const apiBase = (
   window.MQSF_API_BASE || new URL("./api", import.meta.url).href
 ).replace(/\/$/, "");
+const archiveUrl = new URL("./archive.json", import.meta.url);
 const scale = 1.3;
 let config,
   events = [],
@@ -58,22 +59,29 @@ async function api(
       throw new Error(
         "This PR preview is read-only. Use the local demo to test editing.",
       );
-    return { events: [], demo: true };
+    if (!config?.archived) return { events: [], demo: true };
   }
+  if (config?.archived && options.method)
+    throw new Error(
+      "MQSF 2026 has ended. This calendar is a read-only archive.",
+    );
   const controller = new AbortController(),
     timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(`${apiBase}${path}`, {
-      ...options,
-      credentials: "omit",
-      cache: "no-store",
-      redirect: "error",
-      signal: controller.signal,
-      headers: {
-        ...(options.body ? { "Content-Type": "application/json" } : {}),
-        ...(key ? { Authorization: `Bearer ${key}` } : {}),
+    const response = await fetch(
+      config?.archived ? archiveUrl : `${apiBase}${path}`,
+      {
+        ...options,
+        credentials: "omit",
+        cache: "no-store",
+        redirect: "error",
+        signal: controller.signal,
+        headers: {
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(key ? { Authorization: `Bearer ${key}` } : {}),
+        },
       },
-    });
+    );
     const data = await response.json();
     if (!response.ok) {
       const error = new Error(
@@ -168,7 +176,7 @@ function renderCalendar() {
         : "Table not assigned";
       button.setAttribute(
         "aria-label",
-        `${event.start} to ${event.end}: ${event.title}. ${table}. View or edit meet-up.`,
+        `${event.start} to ${event.end}: ${event.title}. ${table}. View meet-up.`,
       );
       button.title = `${event.start}–${event.end} · ${event.title} · ${table}`;
       button.append(
@@ -182,6 +190,13 @@ function renderCalendar() {
     }
     if (!dayEvents.length && loaded) {
       const empty = element("div", "empty-day");
+      if (config.archived) {
+        empty.append(
+          element("p", "", "No meet-ups were scheduled for this day."),
+        );
+        container.append(empty);
+        continue;
+      }
       const add = element(
         "button",
         "button button-secondary",
@@ -215,7 +230,9 @@ async function refresh() {
     loaded = true;
     $("demo-note").hidden = !data.demo;
     $("connection-error").hidden = true;
-    $("sync-status").textContent = "Up to date";
+    $("sync-status").textContent = config.archived
+      ? "Read-only archive"
+      : "Up to date";
     if (signature !== nextSignature) {
       signature = nextSignature;
       renderCalendar();
@@ -292,6 +309,7 @@ function dirty() {
 }
 
 function openEditor(event = null, date = selectedDay, range = {}) {
+  if (config?.archived) return;
   details.close();
   editing = event ? { ...event } : null;
   form.reset();
@@ -426,6 +444,7 @@ document.querySelectorAll(".day-column").forEach((column) => {
       event.pointerType !== "mouse" ||
       event.button !== 0 ||
       !config ||
+      config.archived ||
       selection ||
       event.target.closest("button")
     )
@@ -621,7 +640,7 @@ window.addEventListener("beforeunload", (event) => {
   }
 });
 function refreshIfVisible() {
-  if (!document.hidden && config) refresh();
+  if (!document.hidden && config && !config.archived) refresh();
 }
 document.addEventListener("visibilitychange", refreshIfVisible);
 setInterval(refreshIfVisible, 15000);
@@ -642,6 +661,7 @@ function openOrganizerLogin() {
 }
 
 function organizerLink() {
+  if (!config || config.archived) return;
   if (location.hash !== "#organizer") return;
   history.replaceState(null, "", "#side-events");
   $("side-events").scrollIntoView();
@@ -711,6 +731,9 @@ async function initialize() {
     $("hours-note").textContent =
       config.hoursNote || "Meet-ups run alongside the main program.";
     $("add-event").disabled = false;
+    $("add-event").hidden = Boolean(config.archived);
+    $("edit-event").hidden = Boolean(config.archived);
+    organizerLink();
     renderCalendar();
     await refresh();
   } catch (error) {
